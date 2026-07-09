@@ -466,29 +466,32 @@ body {
   max-width: 560px;
 }
 
+/* Open stat row — values separated by thin dividers, no boxes */
 .hero__stats {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 0.75rem;
-  margin-top: 0.2rem;
+  display: flex;
+  align-items: center;
+  gap: 1.4rem;
+  margin-top: 0.3rem;
 }
 
 .hero__stat {
-  padding: 0.85rem;
-  border-radius: 14px;
-  border: 1px solid var(--border);
-  background-color: var(--surface);
-  backdrop-filter: blur(10px);
+  padding: 0;
+}
+
+.hero__stat + .hero__stat {
+  border-left: 1px solid var(--border);
+  padding-left: 1.4rem;
 }
 
 .hero__stat strong {
   display: block;
-  font-size: 0.95rem;
+  font-size: 1.15rem;
+  font-weight: 600;
   color: var(--text);
 }
 
 .hero__stat span {
-  font-size: 0.75rem;
+  font-size: 0.78rem;
   color: var(--text-dim);
 }
 
@@ -518,24 +521,29 @@ body {
   margin-top: 0.4rem;
 }
 
+/* Plain checklist items — icons carry the accent, no pill boxes */
 .lobby__features li {
   display: flex;
   align-items: center;
-  gap: 0.75rem;
+  gap: 0.8rem;
   color: var(--text-dim);
-  font-size: 0.9rem;
-  padding: 0.7rem 0.8rem;
-  border: 1px solid var(--border);
-  border-radius: 999px;
-  background-color: var(--surface);
+  font-size: 0.92rem;
+  padding: 0.25rem 0;
   width: fit-content;
   max-width: 100%;
 }
 
 .lobby__features i {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  background: linear-gradient(135deg, rgba(60, 123, 244, 0.16), rgba(128, 92, 247, 0.18));
   color: var(--primary);
-  width: 22px;
-  text-align: center;
+  font-size: 0.78rem;
 }
 
 .lobby__dev {
@@ -595,41 +603,43 @@ body {
   z-index: 1;
 }
 
+/* Open, centered prose section — no container box */
 .landing__about {
-  width: min(1120px, 100%);
-  margin-top: 1.3rem;
-  padding: 1.15rem 1.25rem;
-  border: 1px solid var(--border);
-  border-radius: 18px;
-  background-color: var(--surface);
-  backdrop-filter: blur(12px);
+  width: min(760px, 100%);
+  margin-top: 2.5rem;
+  padding: 0 1rem;
+  text-align: center;
 }
 
 .landing__about h3 {
-  font-size: 1.05rem;
-  margin-bottom: 0.35rem;
+  font-size: 1.35rem;
+  margin-bottom: 0.6rem;
 }
 
 .landing__about p {
   color: var(--text-dim);
-  line-height: 1.7;
+  line-height: 1.75;
   font-size: 0.95rem;
 }
 
 .landing__details {
-  width: min(1120px, 100%);
+  width: min(1020px, 100%);
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 1rem;
-  margin-top: 1rem;
+  gap: 2.25rem;
+  margin-top: 2.25rem;
 }
 
+/* Open feature blocks — icon tiles provide the visual anchor,
+   whitespace does the separation instead of borders */
 .detail-card {
-  padding: 1.1rem;
-  border: 1px solid var(--border);
-  border-radius: 16px;
-  background-color: var(--surface);
-  backdrop-filter: blur(12px);
+  padding: 0.25rem;
+  text-align: center;
+}
+
+.detail-card i {
+  margin-left: auto;
+  margin-right: auto;
 }
 
 .detail-card i {
@@ -1554,26 +1564,27 @@ body {
     font-size: 0.92rem;
   }
 
-  /* Compact stat chips in one row instead of tall stacked cards */
+  /* Centered open stat row */
   .hero__stats {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 0.6rem;
+    justify-content: center;
+    gap: 1rem;
     width: 100%;
-    max-width: 480px;
   }
 
   .hero__stat {
-    padding: 0.65rem 0.5rem;
     text-align: center;
-    border-radius: 12px;
+  }
+
+  .hero__stat + .hero__stat {
+    padding-left: 1rem;
   }
 
   .hero__stat strong {
-    font-size: 0.85rem;
+    font-size: 0.95rem;
   }
 
   .hero__stat span {
-    font-size: 0.68rem;
+    font-size: 0.7rem;
   }
 
   .hero__actions {
