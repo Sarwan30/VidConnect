@@ -11,6 +11,18 @@ const lobbyMicBtn = document.getElementById("lobbyMicBtn");
 const lobbyCamBtn = document.getElementById("lobbyCamBtn");
 const joinBtn = document.getElementById("joinBtn");
 const joinBtnText = document.getElementById("joinBtnText");
+const panelChoice = document.getElementById("panelChoice");
+const panelJoin = document.getElementById("panelJoin");
+const panelSetup = document.getElementById("panelSetup");
+const createMeetingBtn = document.getElementById("createMeetingBtn");
+const joinMeetingBtn = document.getElementById("joinMeetingBtn");
+const joinBackBtn = document.getElementById("joinBackBtn");
+const setupBackBtn = document.getElementById("setupBackBtn");
+const setupTitle = document.getElementById("setupTitle");
+const setupStatus = document.getElementById("setupStatus");
+const joinLinkInput = document.getElementById("joinLinkInput");
+const joinLinkError = document.getElementById("joinLinkError");
+const joinLinkBtn = document.getElementById("joinLinkBtn");
 const appEl = document.getElementById("app");
 const videoGrid = document.getElementById("video-grid");
 const participantCount = document.getElementById("participantCount");
@@ -26,6 +38,7 @@ const messages = document.querySelector(".messages");
 const chatInput = document.getElementById("chat_message");
 const sendBtn = document.getElementById("send");
 const toastEl = document.getElementById("toast");
+const admitRequests = document.getElementById("admitRequests");
 
 let user = "Guest";
 let myVideoStream = null;
@@ -33,6 +46,10 @@ let screenStream = null;
 let myPeerId = null;
 let joined = false;
 let mediaSettled = false; // getUserMedia finished (successfully or not)
+let previewStarted = false;
+let requestPending = false; // guest is waiting for the host's decision
+let currentRoomId = typeof ROOM_ID === "string" ? ROOM_ID : "";
+let isHost = false;
 const peers = {}; // userId -> MediaConnection
 const names = {}; // userId -> display name
 
@@ -127,7 +144,7 @@ function showLobbyError(text) {
   lobbyError.classList.remove("hidden");
 }
 
-/* ---------- Lobby ---------- */
+/* ---------- Lobby panels ---------- */
 
 const hour = new Date().getHours();
 lobbyGreeting.textContent =
@@ -139,17 +156,141 @@ if (sessionStorage.getItem("vc-left")) {
   setTimeout(() => showToast("You left the meeting"), 500);
 }
 
-if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-  lobbyPreviewOff.classList.remove("hidden");
-  showLobbyError(
-    "Camera access is not available. Browsers only allow the camera on " +
-    "http://localhost or over HTTPS. You opened: " + window.location.origin
-  );
-  lobbyMicBtn.disabled = true;
-  lobbyCamBtn.disabled = true;
-  mediaSettled = true;
+let activePanel = null;
+function showPanel(panel, direction = "forward") {
+  if (activePanel === panel) return;
+  [panelChoice, panelJoin, panelSetup].forEach((p) => p.classList.remove("active", "back"));
+  panel.classList.add("active");
+  if (direction === "back") panel.classList.add("back");
+  activePanel = panel;
+}
+
+function setStatus(text, isError = false) {
+  if (!text) {
+    setupStatus.classList.add("hidden");
+    setupStatus.textContent = "";
+    return;
+  }
+  setupStatus.textContent = text;
+  setupStatus.classList.remove("hidden");
+  setupStatus.classList.toggle("lobby__status--error", isError);
+}
+
+function enterSetup(direction = "forward") {
+  setupTitle.textContent = isHost ? "Ready to start?" : "Ready to join?";
+  setStatus("");
+  showPanel(panelSetup, direction);
+  startPreview();
   updateJoinState();
+  lobbyName.focus();
+}
+
+// Initial panel: landing choice on "/", setup screen on a shared room link.
+if (!currentRoomId) {
+  showPanel(panelChoice);
 } else {
+  isHost = sessionStorage.getItem("vc-host:" + currentRoomId) === "1";
+  enterSetup();
+}
+
+createMeetingBtn.addEventListener("click", () => {
+  currentRoomId = crypto.randomUUID();
+  isHost = true;
+  sessionStorage.setItem("vc-host:" + currentRoomId, "1");
+  history.pushState({ panel: "setup" }, "", "/" + currentRoomId);
+  enterSetup("forward");
+});
+
+joinMeetingBtn.addEventListener("click", () => {
+  joinLinkError.classList.add("hidden");
+  showPanel(panelJoin, "forward");
+  joinLinkInput.focus();
+});
+
+joinBackBtn.addEventListener("click", () => showPanel(panelChoice, "back"));
+
+setupBackBtn.addEventListener("click", () => {
+  if (requestPending) return; // don't bail out mid-request
+  stopPreview();
+  currentRoomId = "";
+  isHost = false;
+  history.pushState({}, "", "/");
+  showPanel(panelChoice, "back");
+});
+
+// Browser back button mirrors the in-page back animation.
+window.addEventListener("popstate", () => {
+  if (joined) return;
+  if (window.location.pathname === "/") {
+    stopPreview();
+    currentRoomId = "";
+    isHost = false;
+    showPanel(panelChoice, "back");
+  }
+});
+
+/* ---------- Join with a link ---------- */
+
+function extractRoomId(input) {
+  let candidate = input.trim();
+  try {
+    const url = new URL(candidate);
+    if (url.origin !== window.location.origin) return { error: "different-site" };
+    candidate = url.pathname;
+  } catch (e) {
+    /* not a full URL — treat as a code or path */
+  }
+  const parts = candidate.split("/").filter(Boolean);
+  return { roomId: parts.pop() || "" };
+}
+
+function submitJoinLink() {
+  joinLinkError.classList.add("hidden");
+  const raw = joinLinkInput.value.trim();
+  if (!raw) {
+    joinLinkError.textContent = "Please paste a meeting link first.";
+    joinLinkError.classList.remove("hidden");
+    return;
+  }
+  const { roomId, error } = extractRoomId(raw);
+  if (error === "different-site") {
+    joinLinkError.textContent = "That link belongs to a different site. Paste a link from " + window.location.host + ".";
+    joinLinkError.classList.remove("hidden");
+    return;
+  }
+  if (!roomId || !/^[a-z0-9][a-z0-9-]{5,}$/i.test(roomId)) {
+    joinLinkError.textContent = "That doesn't look like a valid meeting link. Check it and try again.";
+    joinLinkError.classList.remove("hidden");
+    return;
+  }
+  window.location.href = "/" + roomId;
+}
+
+joinLinkBtn.addEventListener("click", submitJoinLink);
+joinLinkInput.addEventListener("keydown", (e) => {
+  if (e.key === "Enter") submitJoinLink();
+});
+
+/* ---------- Camera preview (started only on the setup panel) ---------- */
+
+function startPreview() {
+  if (previewStarted) return;
+  previewStarted = true;
+
+  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+    lobbyPreviewOff.classList.remove("hidden");
+    lobbyPreviewOffText.textContent = "Camera unavailable";
+    showLobbyError(
+      "Camera access is not available. Browsers only allow the camera on " +
+      "http://localhost or over HTTPS. You opened: " + window.location.origin
+    );
+    lobbyMicBtn.disabled = true;
+    lobbyCamBtn.disabled = true;
+    mediaSettled = true;
+    updateJoinState();
+    return;
+  }
+
   navigator.mediaDevices
     .getUserMedia({ audio: true, video: true })
     .then((stream) => {
@@ -169,6 +310,7 @@ if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
     .catch((error) => {
       console.error("Error accessing media devices:", error);
       lobbyPreviewOff.classList.remove("hidden");
+      lobbyPreviewOffText.textContent = "Camera unavailable";
       showLobbyError(explainMediaError(error));
       lobbyMicBtn.disabled = true;
       lobbyCamBtn.disabled = true;
@@ -177,10 +319,29 @@ if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
     });
 }
 
+// Release the camera when the user backs out of the setup screen.
+function stopPreview() {
+  if (myVideoStream) {
+    myVideoStream.getTracks().forEach((t) => t.stop());
+    myVideoStream = null;
+  }
+  lobbyPreview.srcObject = null;
+  previewStarted = false;
+  mediaSettled = false;
+  lobbyError.classList.add("hidden");
+  lobbyPreviewOff.classList.add("hidden");
+  lobbyMicBtn.disabled = false;
+  lobbyCamBtn.disabled = false;
+  setMicUI(lobbyMicBtn, true);
+  setCamUI(lobbyCamBtn, true);
+  joinBtn.disabled = true;
+  joinBtnText.textContent = "Connecting…";
+}
+
 function updateJoinState() {
-  if (myPeerId && mediaSettled) {
+  if (myPeerId && mediaSettled && !requestPending) {
     joinBtn.disabled = false;
-    joinBtnText.textContent = "Join meeting";
+    joinBtnText.textContent = isHost ? "Start meeting" : "Ask to join";
   }
 }
 
@@ -216,10 +377,45 @@ lobbyCamBtn.addEventListener("click", () => {
   if (!track.enabled) lobbyPreviewOffText.textContent = "Camera is off";
 });
 
-function joinMeeting() {
+/* ---------- Joining ---------- */
+
+function onJoinClick() {
+  if (joined || !myPeerId || !mediaSettled || requestPending) return;
+  user = lobbyName.value.trim() || "Guest";
+  if (isHost) {
+    joinMeeting(true);
+  } else {
+    requestPending = true;
+    joinBtn.disabled = true;
+    joinBtnText.textContent = "Waiting for the host…";
+    setStatus("Asking to join — the host will let you in shortly.");
+    socket.emit("request-join", currentRoomId, myPeerId, user);
+  }
+}
+
+socket.on("waiting-for-host", () => {
+  setStatus(
+    "The meeting hasn't started yet. Keep this page open — " +
+    "you'll be let in as soon as the host arrives."
+  );
+});
+
+socket.on("join-approved", () => {
+  if (!joined) joinMeeting(false);
+});
+
+socket.on("join-denied", () => {
+  if (joined) return;
+  requestPending = false;
+  setStatus("The host denied your request to join this meeting.", true);
+  updateJoinState();
+});
+
+function joinMeeting(asHost) {
   if (joined || !myPeerId) return;
   joined = true;
-  user = lobbyName.value.trim() || "Guest";
+  requestPending = false;
+  setStatus("");
 
   lobby.classList.add("hidden");
   appEl.classList.remove("hidden");
@@ -241,13 +437,62 @@ function joinMeeting() {
     screenShareBtn.disabled = true;
   }
 
-  socket.emit("join-room", ROOM_ID, myPeerId, user);
+  socket.emit("join-room", currentRoomId, myPeerId, user, !!asHost);
 }
 
-joinBtn.addEventListener("click", joinMeeting);
+joinBtn.addEventListener("click", onJoinClick);
 lobbyName.addEventListener("keydown", (e) => {
-  if (e.key === "Enter") joinMeeting();
+  if (e.key === "Enter") onJoinClick();
 });
+
+/* ---------- Host: admit / deny join requests ---------- */
+
+socket.on("join-request", (requestId, userName) => {
+  if (!joined) return;
+  playReceiveTone();
+  showToast(`${userName || "Someone"} is asking to join`);
+  addAdmitCard(requestId, userName || "Guest");
+});
+
+socket.on("host-promoted", () => {
+  isHost = true;
+  sessionStorage.setItem("vc-host:" + currentRoomId, "1");
+  showToast("You are now the host of this meeting");
+});
+
+function addAdmitCard(requestId, userName) {
+  if (admitRequests.querySelector(`[data-req="${CSS.escape(requestId)}"]`)) return;
+
+  const card = document.createElement("div");
+  card.className = "admit-card";
+  card.dataset.req = requestId;
+
+  const text = document.createElement("span");
+  text.className = "admit-card__text";
+  const bold = document.createElement("b");
+  bold.textContent = userName;
+  text.append(bold, document.createTextNode(" wants to join this meeting"));
+
+  const denyBtn = document.createElement("button");
+  denyBtn.className = "admit-no";
+  denyBtn.textContent = "Deny";
+  denyBtn.addEventListener("click", () => {
+    socket.emit("deny-user", currentRoomId, requestId);
+    card.remove();
+  });
+
+  const admitBtn = document.createElement("button");
+  admitBtn.className = "admit-yes";
+  admitBtn.textContent = "Admit";
+  admitBtn.addEventListener("click", () => {
+    socket.emit("admit-user", currentRoomId, requestId);
+    card.remove();
+    showToast(`Admitted ${userName}`);
+  });
+
+  card.append(text, denyBtn, admitBtn);
+  admitRequests.append(card);
+}
 
 /* ---------- Video tiles ---------- */
 
@@ -423,9 +668,9 @@ function leaveMeeting() {
   [myVideoStream, screenStream].forEach((stream) => {
     if (stream) stream.getTracks().forEach((t) => t.stop());
   });
-  // Return to the landing page (the pre-join screen for this room).
+  // Return to the landing page.
   sessionStorage.setItem("vc-left", "1");
-  window.location.reload();
+  window.location.href = "/";
 }
 
 leaveBtn.addEventListener("click", leaveMeeting);
@@ -461,7 +706,7 @@ function playSendTone() {
   playNote(ctx, 740, ctx.currentTime, 0.12, 0.05);
 }
 
-// Gentle two-note chime when a message arrives.
+// Gentle two-note chime when a message or join request arrives.
 function playReceiveTone() {
   const ctx = getAudioCtx();
   if (!ctx) return;

@@ -22,7 +22,6 @@ const server = useHttps
     )
   : require("http").Server(app);
 
-const { v4: uuidv4 } = require("uuid");
 const { ExpressPeerServer } = require("peer");
 const { WebSocketServer } = require("ws");
 
@@ -82,8 +81,28 @@ app.get("/ice-config", (req, res) => {
   res.json({ iceServers });
 });
 
+// In-memory room state for the waiting-room (admit) flow.
+// roomId -> { host, members: Map<socketId,{userId,userName}>,
+//             pending: Map<socketId,{userId,userName}>, approved: Set<socketId> }
+const rooms = new Map();
+function getRoom(roomId) {
+  if (!rooms.has(roomId)) {
+    rooms.set(roomId, { host: null, members: new Map(), pending: new Map(), approved: new Set() });
+  }
+  return rooms.get(roomId);
+}
+
+app.get("/room-status/:roomId", (req, res) => {
+  const room = rooms.get(req.params.roomId);
+  res.json({
+    active: !!room && room.members.size > 0,
+    hasHost: !!(room && room.host),
+  });
+});
+
+// Landing page: create or join a meeting.
 app.get("/", (req, res) => {
-  res.redirect(`/${uuidv4()}`);
+  res.render("room", { roomId: "" });
 });
 
 app.get("/:room", (req, res) => {
@@ -91,20 +110,91 @@ app.get("/:room", (req, res) => {
 });
 
 io.on("connection", (socket) => {
-  socket.on("join-room", (roomId, userId, userName) => {
-    socket.join(roomId);
+  let joinedRoomId = null;
 
-    // Clients only join after their camera and peer connection are
-    // ready, so others can call them immediately.
+  // A guest asks to enter; the host must admit them first.
+  socket.on("request-join", (roomId, userId, userName) => {
+    const room = getRoom(roomId);
+    if (room.approved.has(socket.id)) {
+      socket.emit("join-approved");
+      return;
+    }
+    room.pending.set(socket.id, { userId, userName });
+    if (room.host) {
+      io.to(room.host).emit("join-request", socket.id, userName);
+    } else {
+      socket.emit("waiting-for-host");
+    }
+  });
+
+  socket.on("admit-user", (roomId, requestId) => {
+    const room = rooms.get(roomId);
+    if (!room || room.host !== socket.id || !room.pending.has(requestId)) return;
+    room.pending.delete(requestId);
+    room.approved.add(requestId);
+    io.to(requestId).emit("join-approved");
+  });
+
+  socket.on("deny-user", (roomId, requestId) => {
+    const room = rooms.get(roomId);
+    if (!room || room.host !== socket.id || !room.pending.has(requestId)) return;
+    room.pending.delete(requestId);
+    io.to(requestId).emit("join-denied");
+  });
+
+  socket.on("join-room", (roomId, userId, userName, asHost) => {
+    const room = getRoom(roomId);
+    const canHost = asHost && !room.host && room.members.size === 0;
+    // Guests cannot slip in without being admitted by the host.
+    if (!room.approved.has(socket.id) && !canHost) {
+      socket.emit("join-denied");
+      return;
+    }
+    if (canHost) {
+      room.host = socket.id;
+      // Guests who arrived before the host started the meeting.
+      for (const [requestId, info] of room.pending) {
+        io.to(socket.id).emit("join-request", requestId, info.userName);
+      }
+    }
+    joinedRoomId = roomId;
+    room.members.set(socket.id, { userId, userName });
+    socket.join(roomId);
     socket.to(roomId).emit("user-connected", userId, userName);
 
     socket.on("message", (message) => {
       io.to(roomId).emit("createMessage", message, userName);
     });
+  });
 
-    socket.on("disconnect", () => {
-      socket.to(roomId).emit("user-disconnected", userId, userName);
-    });
+  socket.on("disconnect", () => {
+    if (!joinedRoomId) {
+      for (const room of rooms.values()) room.pending.delete(socket.id);
+      return;
+    }
+    const room = rooms.get(joinedRoomId);
+    if (!room) return;
+    const me = room.members.get(socket.id);
+    room.members.delete(socket.id);
+    room.approved.delete(socket.id);
+    if (me) socket.to(joinedRoomId).emit("user-disconnected", me.userId, me.userName);
+
+    // If the host left, hand hosting to the longest-present member so
+    // new participants can still be admitted.
+    if (room.host === socket.id) {
+      room.host = null;
+      const next = room.members.keys().next();
+      if (!next.done) {
+        room.host = next.value;
+        io.to(room.host).emit("host-promoted");
+        for (const [requestId, info] of room.pending) {
+          io.to(room.host).emit("join-request", requestId, info.userName);
+        }
+      }
+    }
+    if (room.members.size === 0 && room.pending.size === 0) {
+      rooms.delete(joinedRoomId);
+    }
   });
 });
 

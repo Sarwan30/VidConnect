@@ -38,30 +38,73 @@
           </p>
         </section>
         <div class="lobby__card">
-        <p class="lobby__subtitle">Check your camera and microphone, then join the meeting</p>
-        <div class="lobby__preview">
-          <video id="lobbyPreview" autoplay muted playsinline class="mirrored"></video>
-          <div id="lobbyPreviewOff" class="lobby__preview-off hidden">
-            <i class="fas fa-video-slash"></i>
-            <span id="lobbyPreviewOffText">Camera unavailable</span>
-          </div>
-          <div class="lobby__preview-controls">
-            <button id="lobbyMicBtn" class="preview-btn" title="Toggle microphone">
-              <i class="fas fa-microphone"></i>
+          <!-- Panel: create or join -->
+          <div id="panelChoice" class="lobby__panel">
+            <h3 class="panel__title">Start or join a meeting</h3>
+            <button id="createMeetingBtn" class="option-card">
+              <span class="option-card__icon"><i class="fas fa-video"></i></span>
+              <span class="option-card__body">
+                <span class="option-card__label">Create meeting</span>
+                <span class="option-card__desc">Start a new meeting and invite others</span>
+              </span>
+              <i class="fas fa-chevron-right option-card__arrow"></i>
             </button>
-            <button id="lobbyCamBtn" class="preview-btn" title="Toggle camera">
-              <i class="fas fa-video"></i>
+            <button id="joinMeetingBtn" class="option-card">
+              <span class="option-card__icon"><i class="fas fa-right-to-bracket"></i></span>
+              <span class="option-card__body">
+                <span class="option-card__label">Join meeting</span>
+                <span class="option-card__desc">Enter a meeting link shared with you</span>
+              </span>
+              <i class="fas fa-chevron-right option-card__arrow"></i>
             </button>
           </div>
-        </div>
-        <p id="lobbyError" class="lobby__error hidden"></p>
-        <input id="lobbyName" type="text" maxlength="30" placeholder="Enter your name" autocomplete="off" />
-        <button id="joinBtn" class="btn btn--primary" disabled>
-          <span class="btn__spinner"></span><span id="joinBtnText">Connecting&hellip;</span>
-        </button>
+
+          <!-- Panel: join with a link -->
+          <div id="panelJoin" class="lobby__panel">
+            <div class="panel__head">
+              <button id="joinBackBtn" class="panel__back" title="Back"><i class="fas fa-arrow-left"></i></button>
+              <h3 class="panel__title">Join a meeting</h3>
+            </div>
+            <p class="lobby__subtitle">Paste the meeting link you received</p>
+            <input id="joinLinkInput" type="text" placeholder="Paste meeting link here" autocomplete="off" />
+            <p id="joinLinkError" class="lobby__error hidden"></p>
+            <button id="joinLinkBtn" class="btn btn--primary">Continue</button>
+          </div>
+
+          <!-- Panel: camera/name setup -->
+          <div id="panelSetup" class="lobby__panel">
+            <div class="panel__head">
+              <button id="setupBackBtn" class="panel__back" title="Back"><i class="fas fa-arrow-left"></i></button>
+              <h3 id="setupTitle" class="panel__title">Ready to join?</h3>
+            </div>
+            <div class="lobby__preview">
+              <video id="lobbyPreview" autoplay muted playsinline class="mirrored"></video>
+              <div id="lobbyPreviewOff" class="lobby__preview-off hidden">
+                <i class="fas fa-video-slash"></i>
+                <span id="lobbyPreviewOffText">Camera unavailable</span>
+              </div>
+              <div class="lobby__preview-controls">
+                <button id="lobbyMicBtn" class="preview-btn" title="Toggle microphone">
+                  <i class="fas fa-microphone"></i>
+                </button>
+                <button id="lobbyCamBtn" class="preview-btn" title="Toggle camera">
+                  <i class="fas fa-video"></i>
+                </button>
+              </div>
+            </div>
+            <p id="lobbyError" class="lobby__error hidden"></p>
+            <input id="lobbyName" type="text" maxlength="30" placeholder="Enter your name" autocomplete="off" />
+            <button id="joinBtn" class="btn btn--primary" disabled>
+              <span class="btn__spinner"></span><span id="joinBtnText">Connecting&hellip;</span>
+            </button>
+            <p id="setupStatus" class="lobby__status hidden"></p>
+          </div>
         </div>
       </div>
     </div>
+
+    <!-- Host notifications: people asking to join -->
+    <div id="admitRequests" class="admit-stack"></div>
 
     <!-- Meeting -->
     <div id="app" class="app chat-open hidden">
