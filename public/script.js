@@ -152,10 +152,10 @@ function showLobbyError(text) {
 const hour = new Date().getHours();
 lobbyGreeting.textContent =
   hour < 12
-    ? "Good morning — Gather is ready for your next meeting."
+    ? "Good morning — Together is ready for your next meeting."
     : hour < 17
-      ? "Good afternoon — Gather keeps your next call simple."
-      : "Good evening — Gather helps you connect instantly.";
+      ? "Good afternoon — Together keeps your next call simple."
+      : "Good evening — Together helps you connect instantly.";
 
 function applyTheme(theme) {
   document.documentElement.setAttribute("data-theme", theme);
@@ -197,6 +197,34 @@ heroJoinBtn?.addEventListener("click", () => {
 if (sessionStorage.getItem("vc-left")) {
   sessionStorage.removeItem("vc-left");
   setTimeout(() => showToast("You left the meeting"), 500);
+}
+
+/* ---------- Landing parallax (desktop pointers only) ---------- */
+
+const heroImage = document.querySelector(".lobby__illustration img");
+const orbEls = document.querySelectorAll(".lobby__orbs span");
+
+if (
+  window.matchMedia("(pointer: fine)").matches &&
+  !window.matchMedia("(prefers-reduced-motion: reduce)").matches
+) {
+  let parallaxRaf = null;
+  window.addEventListener("mousemove", (event) => {
+    if (joined || parallaxRaf) return;
+    parallaxRaf = requestAnimationFrame(() => {
+      parallaxRaf = null;
+      const x = event.clientX / window.innerWidth - 0.5;
+      const y = event.clientY / window.innerHeight - 0.5;
+      if (heroImage) {
+        heroImage.style.transform = `translate(${x * -16}px, ${y * -12}px)`;
+      }
+      // `translate` composes with the orbs' float animation (which
+      // animates `transform`) instead of overwriting it.
+      orbEls.forEach((orb, i) => {
+        orb.style.translate = `${x * (12 + i * 8)}px ${y * (10 + i * 6)}px`;
+      });
+    });
+  });
 }
 
 let activePanel = null;
