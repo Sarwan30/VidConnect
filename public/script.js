@@ -12,8 +12,6 @@ const lobbyCamBtn = document.getElementById("lobbyCamBtn");
 const joinBtn = document.getElementById("joinBtn");
 const joinBtnText = document.getElementById("joinBtnText");
 const appEl = document.getElementById("app");
-const leftScreen = document.getElementById("leftScreen");
-const rejoinBtn = document.getElementById("rejoinBtn");
 const videoGrid = document.getElementById("video-grid");
 const participantCount = document.getElementById("participantCount");
 const muteButton = document.getElementById("muteButton");
@@ -134,6 +132,12 @@ function showLobbyError(text) {
 const hour = new Date().getHours();
 lobbyGreeting.textContent =
   hour < 12 ? "Good morning!" : hour < 17 ? "Good afternoon!" : "Good evening!";
+
+// Friendly note when arriving back here after leaving a call.
+if (sessionStorage.getItem("vc-left")) {
+  sessionStorage.removeItem("vc-left");
+  setTimeout(() => showToast("You left the meeting"), 500);
+}
 
 if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
   lobbyPreviewOff.classList.remove("hidden");
@@ -419,12 +423,12 @@ function leaveMeeting() {
   [myVideoStream, screenStream].forEach((stream) => {
     if (stream) stream.getTracks().forEach((t) => t.stop());
   });
-  appEl.classList.add("hidden");
-  leftScreen.classList.remove("hidden");
+  // Return to the landing page (the pre-join screen for this room).
+  sessionStorage.setItem("vc-left", "1");
+  window.location.reload();
 }
 
 leaveBtn.addEventListener("click", leaveMeeting);
-rejoinBtn.addEventListener("click", () => window.location.reload());
 
 /* ---------- Chat sounds (generated, no audio files needed) ---------- */
 

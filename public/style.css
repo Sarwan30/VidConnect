@@ -425,8 +425,7 @@ body {
   justify-content: space-between;
   height: 56px;
   padding: 0 1.25rem;
-  background-color: var(--bg-raised);
-  border-bottom: 1px solid var(--border);
+  background-color: transparent;
   flex-shrink: 0;
 }
 
@@ -435,7 +434,17 @@ body {
   align-items: center;
   gap: 1rem;
   color: var(--text-dim);
-  font-size: 0.9rem;
+  font-size: 0.88rem;
+}
+
+#participantCount {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.35rem 0.85rem;
+  border-radius: 999px;
+  background-color: var(--bg-raised);
+  border: 1px solid var(--border);
 }
 
 .main {
@@ -446,10 +455,14 @@ body {
 }
 
 .stage {
+  position: relative;
   flex: 1;
   display: flex;
   flex-direction: column;
   min-width: 0;
+  background:
+    radial-gradient(ellipse 780px 460px at 50% -12%, rgba(47, 128, 236, 0.09), transparent),
+    transparent;
 }
 
 /* ---------- Video grid ---------- */
@@ -460,8 +473,9 @@ body {
   /* min(100%, …) lets tiles shrink below 320px on narrow screens
      instead of overflowing horizontally */
   grid-template-columns: repeat(auto-fit, minmax(min(100%, 320px), 1fr));
-  gap: 0.75rem;
-  padding: 0.75rem;
+  gap: 1rem;
+  /* extra bottom padding so tiles never hide behind the floating dock */
+  padding: 0.5rem 1rem 6.25rem;
   align-content: center;
   overflow-y: auto;
 }
@@ -469,16 +483,17 @@ body {
 .video-tile {
   position: relative;
   aspect-ratio: 16 / 9;
-  border-radius: var(--radius);
+  border-radius: 18px;
   overflow: hidden;
-  background-color: #000;
-  border: 1px solid var(--border);
+  background-color: #0a0e16;
+  box-shadow: 0 10px 34px rgba(0, 0, 0, 0.4);
   animation: tilePop 0.35s cubic-bezier(0.22, 1, 0.36, 1);
-  transition: box-shadow 0.2s ease;
+  transition: box-shadow 0.25s ease, transform 0.25s ease;
 }
 
 .video-tile:hover {
-  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.45);
+  box-shadow: 0 16px 44px rgba(0, 0, 0, 0.55);
+  transform: translateY(-2px);
 }
 
 .video-tile--leaving {
@@ -497,14 +512,16 @@ body {
 
 .video-tile__name {
   position: absolute;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  padding: 1.4rem 0.9rem 0.5rem;
-  font-size: 0.85rem;
+  left: 12px;
+  bottom: 12px;
+  max-width: calc(100% - 24px);
+  padding: 0.32rem 0.8rem;
+  font-size: 0.78rem;
   font-weight: 500;
   color: #fff;
-  background: linear-gradient(transparent, rgba(0, 0, 0, 0.65));
+  background-color: rgba(8, 11, 18, 0.55);
+  backdrop-filter: blur(8px);
+  border-radius: 999px;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -514,14 +531,21 @@ body {
 /* ---------- Controls ---------- */
 
 .controls {
+  position: absolute;
+  left: 50%;
+  bottom: calc(16px + env(safe-area-inset-bottom));
+  transform: translateX(-50%);
   display: flex;
   align-items: center;
-  justify-content: center;
-  gap: 0.75rem;
-  padding: 0.9rem;
-  background-color: var(--bg-raised);
-  border-top: 1px solid var(--border);
-  flex-shrink: 0;
+  gap: 0.65rem;
+  padding: 0.6rem 0.85rem;
+  background-color: rgba(21, 28, 43, 0.72);
+  backdrop-filter: blur(14px);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  border-radius: 999px;
+  box-shadow: 0 14px 44px rgba(0, 0, 0, 0.5);
+  z-index: 20;
+  animation: fadeInUp 0.45s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .control-btn {
@@ -583,17 +607,20 @@ body {
   display: flex;
   flex-direction: column;
   background-color: var(--bg-panel);
-  border-left: 1px solid var(--border);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  box-shadow: 0 14px 44px rgba(0, 0, 0, 0.35);
   flex-shrink: 0;
-  /* Slide out of the layout smoothly instead of vanishing */
-  margin-right: -330px;
+  margin: 12px -346px 12px 0;
   opacity: 0;
+  overflow: hidden;
+  /* Slide out of the layout smoothly instead of vanishing */
   transition: margin-right 0.32s cubic-bezier(0.22, 1, 0.36, 1),
     opacity 0.25s ease;
 }
 
 .app.chat-open .chat {
-  margin-right: 0;
+  margin-right: 12px;
   opacity: 1;
 }
 
@@ -756,40 +783,11 @@ body {
   background-color: var(--primary-hover);
 }
 
-/* ---------- Left screen ---------- */
-
-.left-screen {
-  height: 100vh;
-  height: 100dvh;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 1rem;
-}
-
-.left-screen__card {
-  text-align: center;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 1rem;
-}
-
-.left-screen__card > i {
-  font-size: 2.2rem;
-  color: var(--danger);
-}
-
-.left-screen__card p {
-  color: var(--text-dim);
-  font-size: 0.9rem;
-}
-
 /* ---------- Toast ---------- */
 
 .toast {
   position: fixed;
-  bottom: 90px;
+  bottom: 104px;
   left: 50%;
   transform: translate(-50%, 12px);
   background-color: var(--bg-raised);
@@ -858,13 +856,16 @@ body {
     inset: 56px 0 0 0;
     width: 100%;
     z-index: 40;
-    margin-right: 0;
+    margin: 0;
+    border: none;
+    border-radius: 16px 16px 0 0;
     transform: translateX(100%);
     transition: transform 0.32s cubic-bezier(0.22, 1, 0.36, 1),
       opacity 0.25s ease;
   }
 
   .app.chat-open .chat {
+    margin: 0;
     transform: translateX(0);
   }
 
@@ -895,19 +896,22 @@ body {
 
   #video-grid {
     grid-template-columns: 1fr;
-    gap: 0.5rem;
-    padding: 0.5rem;
+    gap: 0.6rem;
+    padding: 0.5rem 0.6rem 5.5rem;
     align-content: start;
   }
 
   .video-tile__name {
-    font-size: 0.75rem;
-    padding: 1.1rem 0.7rem 0.4rem;
+    font-size: 0.72rem;
+    left: 8px;
+    bottom: 8px;
   }
 
   .controls {
-    gap: 0.5rem;
-    padding: 0.6rem 0.5rem calc(0.6rem + env(safe-area-inset-bottom));
+    gap: 0.4rem;
+    padding: 0.5rem 0.6rem;
+    bottom: calc(12px + env(safe-area-inset-bottom));
+    max-width: calc(100vw - 16px);
   }
 
   .control-btn {
@@ -975,12 +979,13 @@ body {
   #video-grid {
     grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr));
     gap: 0.5rem;
-    padding: 0.5rem;
+    padding: 0.4rem 0.6rem 4.6rem;
   }
 
   .controls {
-    padding: 0.45rem 0.5rem;
-    gap: 0.5rem;
+    padding: 0.4rem 0.55rem;
+    gap: 0.4rem;
+    bottom: 10px;
   }
 
   .control-btn {
