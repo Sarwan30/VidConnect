@@ -11,6 +11,9 @@ const lobbyMicBtn = document.getElementById("lobbyMicBtn");
 const lobbyCamBtn = document.getElementById("lobbyCamBtn");
 const joinBtn = document.getElementById("joinBtn");
 const joinBtnText = document.getElementById("joinBtnText");
+const heroCreateBtn = document.getElementById("heroCreateBtn");
+const heroJoinBtn = document.getElementById("heroJoinBtn");
+const themeToggle = document.getElementById("themeToggle");
 const panelChoice = document.getElementById("panelChoice");
 const panelJoin = document.getElementById("panelJoin");
 const panelSetup = document.getElementById("panelSetup");
@@ -148,7 +151,47 @@ function showLobbyError(text) {
 
 const hour = new Date().getHours();
 lobbyGreeting.textContent =
-  hour < 12 ? "Good morning!" : hour < 17 ? "Good afternoon!" : "Good evening!";
+  hour < 12
+    ? "Good morning — Gather is ready for your next meeting."
+    : hour < 17
+      ? "Good afternoon — Gather keeps your next call simple."
+      : "Good evening — Gather helps you connect instantly.";
+
+function applyTheme(theme) {
+  document.documentElement.setAttribute("data-theme", theme);
+  const icon = themeToggle?.querySelector("i");
+  if (icon) {
+    icon.className = theme === "dark" ? "fas fa-moon" : "fas fa-sun";
+  }
+  themeToggle?.setAttribute(
+    "aria-label",
+    theme === "dark" ? "Switch to light theme" : "Switch to dark theme"
+  );
+}
+
+const savedTheme = localStorage.getItem("vidconnect-theme");
+const preferredTheme = savedTheme || (window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
+applyTheme(preferredTheme);
+
+themeToggle?.addEventListener("click", () => {
+  const nextTheme = document.documentElement.getAttribute("data-theme") === "dark" ? "light" : "dark";
+  applyTheme(nextTheme);
+  localStorage.setItem("vidconnect-theme", nextTheme);
+});
+
+heroCreateBtn?.addEventListener("click", () => {
+  currentRoomId = crypto.randomUUID();
+  isHost = true;
+  sessionStorage.setItem("vc-host:" + currentRoomId, "1");
+  history.pushState({ panel: "setup" }, "", "/" + currentRoomId);
+  enterSetup("forward");
+});
+
+heroJoinBtn?.addEventListener("click", () => {
+  joinLinkError.classList.add("hidden");
+  showPanel(panelJoin, "forward");
+  joinLinkInput.focus();
+});
 
 // Friendly note when arriving back here after leaving a call.
 if (sessionStorage.getItem("vc-left")) {

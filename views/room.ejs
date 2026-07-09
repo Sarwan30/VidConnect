@@ -3,9 +3,34 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>VidConnect</title>
+    <title>Together | Fast Browser-Based Video Meetings</title>
+    <meta name="description" content="Together is a fast, browser-based video meeting platform for teams, remote work, online classes, and quick collaboration. Start a room in seconds." />
+    <meta name="keywords" content="Together, video meetings, browser meetings, online meetings, screen sharing, video conferencing, remote collaboration" />
+    <meta name="robots" content="index,follow" />
+    <link rel="canonical" href="https://together.eventxkart.space/" />
+    <meta property="og:title" content="Together | Fast Browser-Based Video Meetings" />
+    <meta property="og:description" content="Together helps teams and communities connect instantly with simple, secure video meetings in the browser." />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://together.eventxkart.space/" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Together | Fast Browser-Based Video Meetings" />
+    <meta name="twitter:description" content="Start secure video meetings instantly with Together, a browser-based collaboration platform." />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <link rel="stylesheet" href="style.css" />
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "WebSite",
+        "name": "Together",
+        "url": "https://together.eventxkart.space/",
+        "description": "Together is a fast, browser-based video meeting platform for teams, remote work, online classes, and quick collaboration.",
+        "potentialAction": {
+          "@type": "SearchAction",
+          "target": "https://together.eventxkart.space/?q={search_term_string}",
+          "query-input": "required name=search_term_string"
+        }
+      }
+    </script>
     <script src="/socket.io/socket.io.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
     <script src="/vendor/peerjs/peerjs.min.js"></script>
@@ -14,92 +39,158 @@
     </script>
   </head>
   <body>
-    <!-- Pre-join lobby -->
-    <div id="lobby" class="lobby">
-      <div class="lobby__orbs" aria-hidden="true"><span></span><span></span><span></span></div>
-      <div class="lobby__layout">
-        <section class="lobby__hero">
-          <h1 class="brand brand--lg"><i class="fas fa-video"></i> VidConnect</h1>
-          <h2 id="lobbyGreeting" class="lobby__greeting">Welcome</h2>
-          <p class="lobby__tagline">
-            Fast, private video meetings that run right in your browser.
-            No downloads, no sign-ups &mdash; just share the link.
-          </p>
-          <ul class="lobby__features">
-            <li><i class="fas fa-shield-halved"></i> Peer-to-peer encrypted video</li>
-            <li><i class="fas fa-desktop"></i> One-click screen sharing</li>
-            <li><i class="fas fa-comments"></i> In-call messaging</li>
-          </ul>
-          <p class="lobby__dev">
-            Developed by
-            <a href="https://www.linkedin.com/in/sarwankumar-swe/" target="_blank" rel="noopener">
-              <i class="fab fa-linkedin"></i> Sarwan Kumar
-            </a>
-          </p>
-        </section>
-        <div class="lobby__card">
-          <!-- Panel: create or join -->
-          <div id="panelChoice" class="lobby__panel">
-            <h3 class="panel__title">Start or join a meeting</h3>
-            <button id="createMeetingBtn" class="option-card">
-              <span class="option-card__icon"><i class="fas fa-video"></i></span>
-              <span class="option-card__body">
-                <span class="option-card__label">Create meeting</span>
-                <span class="option-card__desc">Start a new meeting and invite others</span>
-              </span>
-              <i class="fas fa-chevron-right option-card__arrow"></i>
-            </button>
-            <button id="joinMeetingBtn" class="option-card">
-              <span class="option-card__icon"><i class="fas fa-right-to-bracket"></i></span>
-              <span class="option-card__body">
-                <span class="option-card__label">Join meeting</span>
-                <span class="option-card__desc">Enter a meeting link shared with you</span>
-              </span>
-              <i class="fas fa-chevron-right option-card__arrow"></i>
-            </button>
-          </div>
+    <div class="page-shell">
+      <header class="topbar">
+        <a class="brand brand--nav" href="/" aria-label="Together home">
+          <img src="/favicon.svg" alt="Together logo" class="brand__icon" />
+          <span>Together</span>
+        </a>
+        <nav class="topbar__nav" aria-label="Primary">
+          <a href="#features">Features</a>
+          <a href="#security">Security</a>
+          <a href="#about">About</a>
+          <button id="themeToggle" class="theme-toggle" type="button" aria-label="Toggle color theme">
+            <i class="fas fa-moon"></i>
+          </button>
+        </nav>
+      </header>
 
-          <!-- Panel: join with a link -->
-          <div id="panelJoin" class="lobby__panel">
-            <div class="panel__head">
-              <button id="joinBackBtn" class="panel__back" title="Back"><i class="fas fa-arrow-left"></i></button>
-              <h3 class="panel__title">Join a meeting</h3>
-            </div>
-            <p class="lobby__subtitle">Paste the meeting link you received</p>
-            <input id="joinLinkInput" type="text" placeholder="Paste meeting link here" autocomplete="off" />
-            <p id="joinLinkError" class="lobby__error hidden"></p>
-            <button id="joinLinkBtn" class="btn btn--primary">Continue</button>
-          </div>
-
-          <!-- Panel: camera/name setup -->
-          <div id="panelSetup" class="lobby__panel">
-            <div class="panel__head">
-              <button id="setupBackBtn" class="panel__back" title="Back"><i class="fas fa-arrow-left"></i></button>
-              <h3 id="setupTitle" class="panel__title">Ready to join?</h3>
-            </div>
-            <div class="lobby__preview">
-              <video id="lobbyPreview" autoplay muted playsinline class="mirrored"></video>
-              <div id="lobbyPreviewOff" class="lobby__preview-off hidden">
-                <i class="fas fa-video-slash"></i>
-                <span id="lobbyPreviewOffText">Camera unavailable</span>
+      <!-- Pre-join lobby -->
+      <div id="lobby" class="lobby">
+        <div class="lobby__orbs" aria-hidden="true"><span></span><span></span><span></span></div>
+        <div class="lobby__layout">
+          <section class="lobby__hero">
+            <div class="hero__pill"><i class="fas fa-bolt"></i> Instant, private meetings</div>
+            <h2 id="lobbyGreeting" class="lobby__greeting">Together for simple, secure video meetings</h2>
+            <p class="lobby__tagline">
+              Together is a fast browser-based video meeting platform for teams, remote work,
+              online classes, and quick collaboration. Create a room, share a link, and start
+              communicating instantly without downloads or sign-up friction.
+            </p>
+            <div class="hero__stats">
+              <div class="hero__stat">
+                <strong>1-click</strong>
+                <span>meeting setup</span>
               </div>
-              <div class="lobby__preview-controls">
-                <button id="lobbyMicBtn" class="preview-btn" title="Toggle microphone">
-                  <i class="fas fa-microphone"></i>
-                </button>
-                <button id="lobbyCamBtn" class="preview-btn" title="Toggle camera">
-                  <i class="fas fa-video"></i>
-                </button>
+              <div class="hero__stat">
+                <strong>Secure</strong>
+                <span>peer-based calls</span>
+              </div>
+              <div class="hero__stat">
+                <strong>Cross-device</strong>
+                <span>desktop & mobile</span>
               </div>
             </div>
-            <p id="lobbyError" class="lobby__error hidden"></p>
-            <input id="lobbyName" type="text" maxlength="30" placeholder="Enter your name" autocomplete="off" />
-            <button id="joinBtn" class="btn btn--primary" disabled>
-              <span class="btn__spinner"></span><span id="joinBtnText">Connecting&hellip;</span>
-            </button>
-            <p id="setupStatus" class="lobby__status hidden"></p>
+            <div class="hero__actions">
+              <button id="heroCreateBtn" class="btn btn--primary" type="button">Start a meeting</button>
+              <button id="heroJoinBtn" class="btn btn--secondary" type="button">Join with a link</button>
+            </div>
+            <ul class="lobby__features">
+              <li><i class="fas fa-shield-halved"></i> Host and admit participants with confidence</li>
+              <li><i class="fas fa-desktop"></i> Share your screen in a single tap</li>
+              <li><i class="fas fa-comments"></i> Keep the conversation flowing with in-call chat</li>
+            </ul>
+            <p class="lobby__dev">
+              Developed by
+              <a href="https://www.linkedin.com/in/sarwankumar-swe/" target="_blank" rel="noopener">
+                <i class="fab fa-linkedin"></i> Sarwan Kumar
+              </a>
+            </p>
+          </section>
+          <aside class="lobby__illustration">
+            <img src="/images/hero-illustration.png" alt="People connecting through online video meetings" />
+          </aside>
+          <div class="lobby__card">
+            <!-- Panel: create or join -->
+            <div id="panelChoice" class="lobby__panel">
+              <h3 class="panel__title">Start or join a meeting</h3>
+              <button id="createMeetingBtn" class="option-card">
+                <span class="option-card__icon"><i class="fas fa-video"></i></span>
+                <span class="option-card__body">
+                  <span class="option-card__label">Create meeting</span>
+                  <span class="option-card__desc">Start a new meeting and invite others</span>
+                </span>
+                <i class="fas fa-chevron-right option-card__arrow"></i>
+              </button>
+              <button id="joinMeetingBtn" class="option-card">
+                <span class="option-card__icon"><i class="fas fa-right-to-bracket"></i></span>
+                <span class="option-card__body">
+                  <span class="option-card__label">Join meeting</span>
+                  <span class="option-card__desc">Enter a meeting link shared with you</span>
+                </span>
+                <i class="fas fa-chevron-right option-card__arrow"></i>
+              </button>
+            </div>
+
+            <!-- Panel: join with a link -->
+            <div id="panelJoin" class="lobby__panel">
+              <div class="panel__head">
+                <button id="joinBackBtn" class="panel__back" title="Back"><i class="fas fa-arrow-left"></i></button>
+                <h3 class="panel__title">Join a meeting</h3>
+              </div>
+              <p class="lobby__subtitle">Paste the meeting link you received</p>
+              <input id="joinLinkInput" type="text" placeholder="Paste meeting link here" autocomplete="off" />
+              <p id="joinLinkError" class="lobby__error hidden"></p>
+              <button id="joinLinkBtn" class="btn btn--primary">Continue</button>
+            </div>
+
+            <!-- Panel: camera/name setup -->
+            <div id="panelSetup" class="lobby__panel">
+              <div class="panel__head">
+                <button id="setupBackBtn" class="panel__back" title="Back"><i class="fas fa-arrow-left"></i></button>
+                <h3 id="setupTitle" class="panel__title">Ready to join?</h3>
+              </div>
+              <div class="lobby__preview">
+                <video id="lobbyPreview" autoplay muted playsinline class="mirrored"></video>
+                <div id="lobbyPreviewOff" class="lobby__preview-off hidden">
+                  <i class="fas fa-video-slash"></i>
+                  <span id="lobbyPreviewOffText">Camera unavailable</span>
+                </div>
+                <div class="lobby__preview-controls">
+                  <button id="lobbyMicBtn" class="preview-btn" title="Toggle microphone">
+                    <i class="fas fa-microphone"></i>
+                  </button>
+                  <button id="lobbyCamBtn" class="preview-btn" title="Toggle camera">
+                    <i class="fas fa-video"></i>
+                  </button>
+                </div>
+              </div>
+              <p id="lobbyError" class="lobby__error hidden"></p>
+              <input id="lobbyName" type="text" maxlength="30" placeholder="Enter your name" autocomplete="off" />
+              <button id="joinBtn" class="btn btn--primary" disabled>
+                <span class="btn__spinner"></span><span id="joinBtnText">Connecting&hellip;</span>
+              </button>
+              <p id="setupStatus" class="lobby__status hidden"></p>
+            </div>
           </div>
         </div>
+
+        <section class="landing__about" id="about">
+          <h3>About Together</h3>
+          <p>
+            Together helps people meet, collaborate, and stay connected from anywhere. Whether you are
+            hosting a remote team meeting, teaching an online class, or catching up with friends,
+            Together makes video communication simple, quick, and dependable.
+          </p>
+        </section>
+
+        <section class="landing__details" id="features">
+          <article class="detail-card" id="security">
+            <i class="fas fa-shield-halved"></i>
+            <h3>Secure by default</h3>
+            <p>Private peer connections keep your meetings lightweight while preserving a smooth experience.</p>
+          </article>
+          <article class="detail-card">
+            <i class="fas fa-layer-group"></i>
+            <h3>Built for collaboration</h3>
+            <p>Screen sharing, chat, and host controls help teams stay aligned without switching apps.</p>
+          </article>
+          <article class="detail-card" id="about">
+            <i class="fas fa-rocket"></i>
+            <h3>Launch in seconds</h3>
+            <p>No account required. Open the page, create a room, and share the link instantly.</p>
+          </article>
+        </section>
       </div>
     </div>
 
@@ -109,7 +200,7 @@
     <!-- Meeting -->
     <div id="app" class="app chat-open hidden">
       <header class="header">
-        <div class="brand"><i class="fas fa-video"></i> VidConnect</div>
+        <div class="brand"><img src="/favicon.svg" alt="Together logo" class="brand__icon" /> Together</div>
         <div class="header__info">
           <span id="participantCount" title="Participants"><i class="fas fa-user-group"></i> 1</span>
         </div>
