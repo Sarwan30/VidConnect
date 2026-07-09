@@ -5,9 +5,12 @@ A simple video chat app (Zoom-style) built with Express, Socket.IO, and PeerJS (
 ## Features
 
 - Video/audio calls with multiple participants per room
+- Pre-join lobby with camera preview and name entry
+- Screen sharing (with automatic camera restore when sharing stops)
+- Leave / end-call button with a rejoin screen
 - Unique room links — opening `/` redirects to a new room, share the URL to invite others
-- Text chat alongside the call
-- Mute microphone / stop camera toggles
+- Text chat with name labels, timestamps, and join/leave notifications
+- Mute microphone / stop camera toggles, participant counter, copy-invite-link button
 - Responsive layout with a mobile chat view
 
 ## Getting started

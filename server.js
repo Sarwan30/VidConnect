@@ -72,18 +72,16 @@ io.on("connection", (socket) => {
   socket.on("join-room", (roomId, userId, userName) => {
     socket.join(roomId);
 
-    // Give the joining client a moment to set up its media stream
-    // before others try to call it.
-    setTimeout(() => {
-      socket.to(roomId).emit("user-connected", userId);
-    }, 1000);
+    // Clients only join after their camera and peer connection are
+    // ready, so others can call them immediately.
+    socket.to(roomId).emit("user-connected", userId, userName);
 
     socket.on("message", (message) => {
       io.to(roomId).emit("createMessage", message, userName);
     });
 
     socket.on("disconnect", () => {
-      socket.to(roomId).emit("user-disconnected", userId);
+      socket.to(roomId).emit("user-disconnected", userId, userName);
     });
   });
 });

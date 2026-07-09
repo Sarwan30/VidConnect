@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>videoChatApp</title>
+    <title>VidConnect</title>
     <link rel="stylesheet" href="style.css" />
     <script src="/socket.io/socket.io.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
@@ -13,54 +13,83 @@
     </script>
   </head>
   <body>
-    <div class="header">
-      <div class="logo">
-        <div class="header__back">
-          <i class="fas fa-angle-left"></i>
-        </div>
-        <h3>Vid Connect</h3>
-      </div>
-    </div>  
-    <div class="main">  
-    <div class="main__left">
-      <div class="videos__group">
-        <div id="video-grid">
-
-        </div>
-      </div>
-      <div class="options">
-        <div class="options__left">
-          <div id="stopVideo" class="options__button">
-            <i class="fa fa-video-camera"></i>
-          </div>
-          <div id="muteButton" class="options__button">
-            <i class="fa fa-microphone"></i>
-          </div>
-          <div id="showChat" class="options__button">
-            <i class="fa fa-comment"></i>
+    <!-- Pre-join lobby -->
+    <div id="lobby" class="lobby">
+      <div class="lobby__card">
+        <h1 class="brand"><i class="fas fa-video"></i> VidConnect</h1>
+        <div class="lobby__preview">
+          <video id="lobbyPreview" autoplay muted playsinline class="mirrored"></video>
+          <div id="lobbyPreviewOff" class="lobby__preview-off hidden">
+            <i class="fas fa-video-slash"></i>
+            <span>Camera unavailable</span>
           </div>
         </div>
-        <div class="options__right">
-          <div id="inviteButton" class="options__button">
-            <i class="fas fa-user-plus"></i>
-          </div>
-        </div>
+        <p id="lobbyError" class="lobby__error hidden"></p>
+        <input id="lobbyName" type="text" maxlength="30" placeholder="Enter your name" autocomplete="off" />
+        <button id="joinBtn" class="btn btn--primary" disabled>Connecting&hellip;</button>
       </div>
     </div>
-    <div class="main__right">
-      <div class="main__chat_window">
-          <div class="messages">
 
-          </div>
-      </div>
-      <div class="main__message_container">
-        <input id="chat_message" type="text" autocomplete="off" placeholder="Type message here...">
-        <div id="send" class="options__button">
-          <i class="fa fa-plus" aria-hidden="true"></i>
+    <!-- Meeting -->
+    <div id="app" class="app chat-open hidden">
+      <header class="header">
+        <div class="brand"><i class="fas fa-video"></i> VidConnect</div>
+        <div class="header__info">
+          <span id="participantCount" title="Participants"><i class="fas fa-user-group"></i> 1</span>
         </div>
+      </header>
+      <main class="main">
+        <section class="stage">
+          <div id="video-grid"></div>
+          <div class="controls">
+            <button id="muteButton" class="control-btn" title="Mute / unmute microphone">
+              <i class="fas fa-microphone"></i>
+            </button>
+            <button id="stopVideo" class="control-btn" title="Turn camera on / off">
+              <i class="fas fa-video"></i>
+            </button>
+            <button id="screenShareBtn" class="control-btn" title="Share your screen">
+              <i class="fas fa-desktop"></i>
+            </button>
+            <button id="chatToggle" class="control-btn" title="Toggle chat">
+              <i class="fas fa-comment"></i>
+            </button>
+            <button id="inviteButton" class="control-btn" title="Copy invite link">
+              <i class="fas fa-user-plus"></i>
+            </button>
+            <button id="leaveBtn" class="control-btn control-btn--danger" title="Leave meeting">
+              <i class="fas fa-phone-slash"></i>
+            </button>
+          </div>
+        </section>
+        <aside id="chatPanel" class="chat">
+          <div class="chat__header">
+            <span>In-call messages</span>
+            <button id="chatClose" class="chat__close" title="Close chat"><i class="fas fa-times"></i></button>
+          </div>
+          <div id="chatWindow" class="chat__window">
+            <div class="messages"></div>
+          </div>
+          <div class="chat__composer">
+            <input id="chat_message" type="text" autocomplete="off" placeholder="Send a message&hellip;" />
+            <button id="send" class="chat__send" title="Send"><i class="fas fa-paper-plane"></i></button>
+          </div>
+        </aside>
+      </main>
+    </div>
+
+    <!-- After leaving -->
+    <div id="leftScreen" class="left-screen hidden">
+      <div class="left-screen__card">
+        <i class="fas fa-phone-slash"></i>
+        <h2>You left the meeting</h2>
+        <p>You can rejoin at any time using the same link.</p>
+        <button id="rejoinBtn" class="btn btn--primary">Rejoin</button>
       </div>
     </div>
-  </div>
+
+    <div id="toast" class="toast hidden"></div>
+
+    <script src="script.js"></script>
   </body>
-  <script src="script.js"></script>
 </html>
