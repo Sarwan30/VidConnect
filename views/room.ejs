@@ -4,6 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>VidConnect</title>
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <link rel="stylesheet" href="style.css" />
     <script src="/socket.io/socket.io.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
@@ -15,8 +16,28 @@
   <body>
     <!-- Pre-join lobby -->
     <div id="lobby" class="lobby">
-      <div class="lobby__card">
-        <h1 class="brand"><i class="fas fa-video"></i> VidConnect</h1>
+      <div class="lobby__orbs" aria-hidden="true"><span></span><span></span><span></span></div>
+      <div class="lobby__layout">
+        <section class="lobby__hero">
+          <h1 class="brand brand--lg"><i class="fas fa-video"></i> VidConnect</h1>
+          <h2 id="lobbyGreeting" class="lobby__greeting">Welcome</h2>
+          <p class="lobby__tagline">
+            Fast, private video meetings that run right in your browser.
+            No downloads, no sign-ups &mdash; just share the link.
+          </p>
+          <ul class="lobby__features">
+            <li><i class="fas fa-shield-halved"></i> Peer-to-peer encrypted video</li>
+            <li><i class="fas fa-desktop"></i> One-click screen sharing</li>
+            <li><i class="fas fa-comments"></i> In-call messaging</li>
+          </ul>
+          <p class="lobby__dev">
+            Developed by
+            <a href="https://www.linkedin.com/in/sarwankumar-swe/" target="_blank" rel="noopener">
+              <i class="fab fa-linkedin"></i> Sarwan Kumar
+            </a>
+          </p>
+        </section>
+        <div class="lobby__card">
         <p class="lobby__subtitle">Check your camera and microphone, then join the meeting</p>
         <div class="lobby__preview">
           <video id="lobbyPreview" autoplay muted playsinline class="mirrored"></video>
@@ -38,6 +59,7 @@
         <button id="joinBtn" class="btn btn--primary" disabled>
           <span class="btn__spinner"></span><span id="joinBtnText">Connecting&hellip;</span>
         </button>
+        </div>
       </div>
     </div>
 

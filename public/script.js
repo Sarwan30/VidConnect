@@ -5,6 +5,7 @@ const lobbyPreview = document.getElementById("lobbyPreview");
 const lobbyPreviewOff = document.getElementById("lobbyPreviewOff");
 const lobbyError = document.getElementById("lobbyError");
 const lobbyName = document.getElementById("lobbyName");
+const lobbyGreeting = document.getElementById("lobbyGreeting");
 const lobbyPreviewOffText = document.getElementById("lobbyPreviewOffText");
 const lobbyMicBtn = document.getElementById("lobbyMicBtn");
 const lobbyCamBtn = document.getElementById("lobbyCamBtn");
@@ -129,6 +130,10 @@ function showLobbyError(text) {
 }
 
 /* ---------- Lobby ---------- */
+
+const hour = new Date().getHours();
+lobbyGreeting.textContent =
+  hour < 12 ? "Good morning!" : hour < 17 ? "Good afternoon!" : "Good evening!";
 
 if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
   lobbyPreviewOff.classList.remove("hidden");
