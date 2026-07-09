@@ -1,0 +1,17 @@
+{
+  "name": "Together — Video Meetings",
+  "short_name": "Together",
+  "description": "Fast, private video meetings that run right in your browser.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0b0d12",
+  "theme_color": "#3c7bf4",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}

@@ -42,6 +42,14 @@ const chatInput = document.getElementById("chat_message");
 const sendBtn = document.getElementById("send");
 const toastEl = document.getElementById("toast");
 const admitRequests = document.getElementById("admitRequests");
+const deviceRow = document.getElementById("deviceRow");
+const camSelect = document.getElementById("camSelect");
+const micSelect = document.getElementById("micSelect");
+const participantsPanel = document.getElementById("participantsPanel");
+const participantsList = document.getElementById("participantsList");
+const participantsClose = document.getElementById("participantsClose");
+const reconnectBanner = document.getElementById("reconnectBanner");
+const reconnectBtn = document.getElementById("reconnectBtn");
 
 let user = "Guest";
 let myVideoStream = null;
@@ -53,6 +61,7 @@ let previewStarted = false;
 let requestPending = false; // guest is waiting for the host's decision
 let currentRoomId = typeof ROOM_ID === "string" ? ROOM_ID : "";
 let isHost = false;
+let leavingOnPurpose = false; // suppress the reconnect banner on leave/kick
 const peers = {}; // userId -> MediaConnection
 const names = {}; // userId -> display name
 
@@ -86,6 +95,11 @@ function createPeer(iceServers) {
 
     peer.on("error", (error) => {
       console.error("PeerJS error:", error);
+    });
+
+    // Transient signaling-server drop: try to re-establish quietly.
+    peer.on("disconnected", () => {
+      if (!peer.destroyed) peer.reconnect();
     });
 
     peer.on("open", (id) => {
@@ -205,6 +219,42 @@ if (sessionStorage.getItem("vc-left")) {
   sessionStorage.removeItem("vc-left");
   setTimeout(() => showToast("You left the meeting"), 500);
 }
+if (sessionStorage.getItem("vc-kicked")) {
+  sessionStorage.removeItem("vc-kicked");
+  setTimeout(() => showToast("You were removed from the meeting by the host"), 500);
+}
+
+/* ---------- Connection loss & being removed ---------- */
+
+// PWA installability (the worker does no caching — network only).
+if ("serviceWorker" in navigator && window.isSecureContext) {
+  navigator.serviceWorker.register("/sw.js").catch(() => {});
+}
+
+socket.on("disconnect", () => {
+  if (!joined || leavingOnPurpose) return;
+  reconnectBanner.classList.remove("hidden");
+});
+
+socket.io.on("reconnect", () => {
+  // Server state (host role, admissions) was lost with the connection;
+  // a reload re-runs the proper join flow.
+  if (joined) reconnectBanner.classList.remove("hidden");
+});
+
+reconnectBtn.addEventListener("click", () => window.location.reload());
+
+socket.on("kicked", () => {
+  leavingOnPurpose = true;
+  joined = false;
+  Object.values(peers).forEach((call) => call.close());
+  if (peer) peer.destroy();
+  [myVideoStream, screenStream].forEach((stream) => {
+    if (stream) stream.getTracks().forEach((t) => t.stop());
+  });
+  sessionStorage.setItem("vc-kicked", "1");
+  window.location.href = "/";
+});
 
 /* ---------- Landing parallax (desktop pointers only) ---------- */
 
@@ -376,6 +426,7 @@ function startPreview() {
       lobbyPreview.srcObject = stream;
       mediaSettled = true;
       updateJoinState();
+      populateDevicePickers();
       // Defensive: if the user somehow joined before the camera was
       // ready, show their tile and re-enable the media controls now.
       if (joined) {
@@ -422,6 +473,63 @@ function updateJoinState() {
     joinBtnText.textContent = isHost ? "Start meeting" : "Ask to join";
   }
 }
+
+/* ---------- Device selection (camera / microphone) ---------- */
+
+async function populateDevicePickers() {
+  try {
+    const devices = await navigator.mediaDevices.enumerateDevices();
+    const cams = devices.filter((d) => d.kind === "videoinput");
+    const mics = devices.filter((d) => d.kind === "audioinput");
+    if (cams.length < 2 && mics.length < 2) return; // nothing to choose
+
+    const fill = (select, list, label) => {
+      select.innerHTML = "";
+      list.forEach((device, i) => {
+        const option = document.createElement("option");
+        option.value = device.deviceId;
+        option.textContent = device.label || `${label} ${i + 1}`;
+        select.append(option);
+      });
+    };
+    fill(camSelect, cams, "Camera");
+    fill(micSelect, mics, "Microphone");
+
+    // Preselect the devices currently in use
+    const currentCam = myVideoStream?.getVideoTracks()[0]?.getSettings().deviceId;
+    const currentMic = myVideoStream?.getAudioTracks()[0]?.getSettings().deviceId;
+    if (currentCam) camSelect.value = currentCam;
+    if (currentMic) micSelect.value = currentMic;
+
+    deviceRow.classList.remove("hidden");
+  } catch (error) {
+    /* device enumeration unsupported — pickers stay hidden */
+  }
+}
+
+async function applyDeviceSelection() {
+  const constraints = {
+    audio: micSelect.value ? { deviceId: { exact: micSelect.value } } : true,
+    video: camSelect.value ? { deviceId: { exact: camSelect.value } } : true,
+  };
+  const previous = myVideoStream;
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia(constraints);
+    myVideoStream = stream;
+    lobbyPreview.srcObject = stream;
+    if (previous) previous.getTracks().forEach((t) => t.stop());
+    setMicUI(lobbyMicBtn, true);
+    setCamUI(lobbyCamBtn, true);
+    lobbyPreviewOff.classList.add("hidden");
+    lobbyError.classList.add("hidden");
+  } catch (error) {
+    console.error("Could not switch device:", error);
+    showLobbyError(explainMediaError(error));
+  }
+}
+
+camSelect.addEventListener("change", applyDeviceSelection);
+micSelect.addEventListener("change", applyDeviceSelection);
 
 /* ---------- Pre-join mic/camera toggles ---------- */
 
@@ -518,6 +626,8 @@ function joinMeeting(asHost) {
   }
 
   socket.emit("join-room", currentRoomId, myPeerId, user, !!asHost);
+  // Let others know if we joined muted (pre-join toggle).
+  setTimeout(broadcastMuteState, 800);
 }
 
 joinBtn.addEventListener("click", onJoinClick);
@@ -594,7 +704,12 @@ function addVideoTile(userId, label, stream, { muted = false, mirrored = false }
     const name = document.createElement("span");
     name.className = "video-tile__name";
 
-    tile.append(video, name);
+    const micBadge = document.createElement("span");
+    micBadge.className = "video-tile__mic hidden";
+    micBadge.innerHTML = `<i class="fas fa-microphone-slash"></i>`;
+
+    tile.title = "Click to pin";
+    tile.append(video, name, micBadge);
     videoGrid.append(tile);
   } else {
     video = tile.querySelector("video");
@@ -621,7 +736,76 @@ function removeVideoTile(userId) {
 function updateParticipantCount() {
   participantCount.innerHTML =
     `<i class="fas fa-user-group"></i> ${Math.max(videoGrid.children.length, 1)}`;
+  renderParticipants();
 }
+
+/* ---------- Mute badges ---------- */
+
+function setTileMuted(userId, muted) {
+  const tile = videoGrid.querySelector(`[data-tile="${CSS.escape(userId)}"]`);
+  if (!tile) return;
+  tile.querySelector(".video-tile__mic")?.classList.toggle("hidden", !muted);
+}
+
+function broadcastMuteState() {
+  if (!joined || !myVideoStream) return;
+  const track = myVideoStream.getAudioTracks()[0];
+  if (!track) return;
+  socket.emit("mute-state", !track.enabled);
+  setTileMuted("me", !track.enabled);
+}
+
+socket.on("mute-state", (userId, muted) => {
+  setTileMuted(userId, muted);
+});
+
+/* ---------- Pin a tile (enlarge; great for screen shares) ---------- */
+
+videoGrid.addEventListener("click", (event) => {
+  const tile = event.target.closest(".video-tile");
+  if (!tile) return;
+  const wasPinned = tile.classList.contains("video-tile--pinned");
+  videoGrid.querySelectorAll(".video-tile--pinned").forEach((t) =>
+    t.classList.remove("video-tile--pinned")
+  );
+  videoGrid.classList.toggle("grid--pinned", !wasPinned);
+  if (!wasPinned) tile.classList.add("video-tile--pinned");
+});
+
+/* ---------- Participants panel ---------- */
+
+function renderParticipants() {
+  if (!participantsList) return;
+  participantsList.innerHTML = "";
+  videoGrid.querySelectorAll(".video-tile").forEach((tile) => {
+    const userId = tile.dataset.tile;
+    const label = tile.querySelector(".video-tile__name")?.textContent || "Guest";
+    const item = document.createElement("li");
+
+    const nameSpan = document.createElement("span");
+    nameSpan.textContent = userId === "me" && isHost ? `${label} · Host` : label;
+    item.append(nameSpan);
+
+    if (isHost && userId !== "me") {
+      const removeBtn = document.createElement("button");
+      removeBtn.className = "participants__remove";
+      removeBtn.title = "Remove from meeting";
+      removeBtn.innerHTML = `<i class="fas fa-user-minus"></i>`;
+      removeBtn.addEventListener("click", () => {
+        socket.emit("remove-user", currentRoomId, userId);
+        showToast(`Removing ${label}…`);
+      });
+      item.append(removeBtn);
+    }
+    participantsList.append(item);
+  });
+}
+
+participantCount.addEventListener("click", () => {
+  participantsPanel.classList.toggle("hidden");
+  renderParticipants();
+});
+participantsClose.addEventListener("click", () => participantsPanel.classList.add("hidden"));
 
 function registerCall(userId, call) {
   peers[userId] = call;
@@ -646,6 +830,9 @@ socket.on("user-connected", (userId, userName) => {
   if (!stream) return; // nothing to send; they will still see others
   const call = peer.call(userId, stream, { metadata: { userName: user } });
   if (call) registerCall(userId, call);
+
+  // Re-announce our mute state so the newcomer's tile badge is right.
+  setTimeout(broadcastMuteState, 1500);
 });
 
 socket.on("user-disconnected", (userId, userName) => {
@@ -667,6 +854,7 @@ muteButton.addEventListener("click", () => {
   if (!audioTrack) return;
   audioTrack.enabled = !audioTrack.enabled;
   setMicUI(muteButton, audioTrack.enabled);
+  broadcastMuteState();
 });
 
 stopVideo.addEventListener("click", () => {
@@ -741,6 +929,7 @@ screenShareBtn.addEventListener("click", () => {
 /* ---------- Leave ---------- */
 
 function leaveMeeting() {
+  leavingOnPurpose = true;
   joined = false;
   Object.values(peers).forEach((call) => call.close());
   socket.disconnect();

@@ -1,0 +1,51 @@
+# Together
+
+> Together is a completely free, browser-based video meeting platform.
+> No downloads, no sign-up, no cost — create a meeting room, share the
+> link, and start a video call in seconds.
+
+Website: https://together.eventxkart.space/
+
+## What Together does
+
+- Free video and audio meetings with multiple participants, directly in
+  the web browser (desktop, tablet, and mobile)
+- One-click meeting creation — the host gets a shareable room link
+- Waiting room: the host is notified when someone asks to join and can
+  admit or deny them; the host can also remove participants
+- One-tap screen sharing with automatic camera restore
+- In-call text chat with notification sounds and unread indicators
+- Mute indicators, click-to-pin video tiles, participant list
+- Camera and microphone selection before joining
+- Light and dark themes; installable as a Progressive Web App
+
+## How it works
+
+Together uses WebRTC for peer-to-peer video/audio (with a TURN relay
+fallback for restrictive networks), Socket.IO for signaling and chat,
+and runs entirely in the browser — nothing to install.
+
+## Pricing
+
+Together is 100% free. There are no accounts, subscriptions, paid
+tiers, or hidden charges.
+
+## Who is it for
+
+Remote teams, online classes and tutoring, interviews, quick
+client calls, and friends or family catching up — anyone who needs an
+instant, private video meeting without creating an account.
+
+## Privacy notes
+
+- Meeting rooms use unguessable link IDs and are not indexed by search
+  engines
+- Guests enter only after the host admits them
+- Video and audio flow peer-to-peer between participants
+
+## Developer / Contact
+
+Built by Sarwan Kumar
+- LinkedIn: https://www.linkedin.com/in/sarwankumar-swe/
+- Email: sarwan.30kr@gmail.com
+

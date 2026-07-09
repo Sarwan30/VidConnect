@@ -3,33 +3,68 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Together | Fast Browser-Based Video Meetings</title>
-    <meta name="description" content="Together is a fast, browser-based video meeting platform for teams, remote work, online classes, and quick collaboration. Start a room in seconds." />
-    <meta name="keywords" content="Together, video meetings, browser meetings, online meetings, screen sharing, video conferencing, remote collaboration" />
+    <title>Together | Free Browser-Based Video Meetings — No Sign-Up</title>
+    <meta name="description" content="Together is a 100% free, browser-based video meeting platform for teams, remote work, online classes, and quick collaboration. No downloads, no sign-up — create a room and share the link in seconds." />
+    <meta name="keywords" content="Together, free video meetings, free video conferencing, free online meetings, free video call, video call without sign up, no download video meeting, browser video call, free screen sharing, group video chat free, free zoom alternative, google meet alternative free, online meeting app free, remote collaboration, virtual classroom free" />
+    <% if (roomId) { %>
+    <!-- Private meeting rooms must never appear in search results -->
+    <meta name="robots" content="noindex,nofollow" />
+    <% } else { %>
     <meta name="robots" content="index,follow" />
+    <% } %>
     <link rel="canonical" href="https://together.eventxkart.space/" />
-    <meta property="og:title" content="Together | Fast Browser-Based Video Meetings" />
-    <meta property="og:description" content="Together helps teams and communities connect instantly with simple, secure video meetings in the browser." />
+    <meta property="og:title" content="Together | Free Browser-Based Video Meetings — No Sign-Up" />
+    <meta property="og:description" content="100% free video meetings in your browser. No downloads, no sign-up — create a room, share the link, and start talking." />
     <meta property="og:type" content="website" />
     <meta property="og:url" content="https://together.eventxkart.space/" />
+    <meta property="og:image" content="https://together.eventxkart.space/images/hero-illustration.webp" />
     <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:title" content="Together | Fast Browser-Based Video Meetings" />
-    <meta name="twitter:description" content="Start secure video meetings instantly with Together, a browser-based collaboration platform." />
+    <meta name="twitter:title" content="Together | Free Browser-Based Video Meetings — No Sign-Up" />
+    <meta name="twitter:description" content="100% free video meetings in your browser. Screen sharing, chat, and host controls — no downloads, no sign-up." />
+    <meta name="twitter:image" content="https://together.eventxkart.space/images/hero-illustration.webp" />
+    <meta name="theme-color" content="#0b0d12" />
+    <link rel="manifest" href="/manifest.webmanifest" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <link rel="stylesheet" href="style.css" />
     <script type="application/ld+json">
-      {
-        "@context": "https://schema.org",
-        "@type": "WebSite",
-        "name": "Together",
-        "url": "https://together.eventxkart.space/",
-        "description": "Together is a fast, browser-based video meeting platform for teams, remote work, online classes, and quick collaboration.",
-        "potentialAction": {
-          "@type": "SearchAction",
-          "target": "https://together.eventxkart.space/?q={search_term_string}",
-          "query-input": "required name=search_term_string"
+      [
+        {
+          "@context": "https://schema.org",
+          "@type": "WebSite",
+          "name": "Together",
+          "url": "https://together.eventxkart.space/",
+          "description": "Together is a free, browser-based video meeting platform for teams, remote work, online classes, and quick collaboration."
+        },
+        {
+          "@context": "https://schema.org",
+          "@type": "WebApplication",
+          "name": "Together",
+          "url": "https://together.eventxkart.space/",
+          "applicationCategory": "CommunicationApplication",
+          "operatingSystem": "Any (runs in the web browser)",
+          "browserRequirements": "Requires a modern browser with camera and microphone access",
+          "description": "Free browser-based video meetings with screen sharing, in-call chat, and host controls. No downloads, no sign-up.",
+          "image": "https://together.eventxkart.space/images/hero-illustration.webp",
+          "offers": {
+            "@type": "Offer",
+            "price": "0",
+            "priceCurrency": "USD"
+          },
+          "featureList": [
+            "Free unlimited video meetings",
+            "No sign-up or downloads required",
+            "Screen sharing",
+            "In-call text chat",
+            "Host waiting room with admit controls",
+            "Works on desktop, tablet, and mobile"
+          ],
+          "author": {
+            "@type": "Person",
+            "name": "Sarwan Kumar",
+            "url": "https://www.linkedin.com/in/sarwankumar-swe/"
+          }
         }
-      }
+      ]
     </script>
     <script src="/socket.io/socket.io.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
@@ -65,9 +100,9 @@
           <section class="lobby__hero">
             <h2 id="lobbyGreeting" class="lobby__greeting">Together for simple, secure video meetings</h2>
             <p class="lobby__tagline">
-              Together is a fast browser-based video meeting platform for teams, remote work,
-              online classes, and quick collaboration. Create a room, share a link, and start
-              communicating instantly without downloads or sign-up friction.
+              Together is a completely free, browser-based video meeting platform for teams,
+              remote work, online classes, and quick collaboration. Create a room, share a
+              link, and start communicating instantly &mdash; no downloads, no sign-up, no cost.
             </p>
             <div class="hero__stats">
               <div class="hero__stat">
@@ -100,7 +135,7 @@
             </p>
           </section>
           <aside class="lobby__illustration">
-            <img src="/images/hero-illustration.png" alt="People connecting through online video meetings" />
+            <img src="/images/hero-illustration.webp" alt="People connecting through online video meetings" />
           </aside>
           <div class="lobby__card">
             <!-- Panel: create or join -->
@@ -157,6 +192,10 @@
                   </button>
                 </div>
               </div>
+              <div id="deviceRow" class="device-row hidden">
+                <select id="camSelect" title="Choose camera" aria-label="Camera"></select>
+                <select id="micSelect" title="Choose microphone" aria-label="Microphone"></select>
+              </div>
               <p id="lobbyError" class="lobby__error hidden"></p>
               <input id="lobbyName" type="text" maxlength="30" placeholder="Enter your name" autocomplete="off" />
               <button id="joinBtn" class="btn btn--primary" disabled>
@@ -170,9 +209,10 @@
         <section class="landing__about" id="about">
           <h3>About Together</h3>
           <p>
-            Together helps people meet, collaborate, and stay connected from anywhere. Whether you are
-            hosting a remote team meeting, teaching an online class, or catching up with friends,
-            Together makes video communication simple, quick, and dependable.
+            Together helps people meet, collaborate, and stay connected from anywhere &mdash; completely
+            free. Whether you are hosting a remote team meeting, teaching an online class, or catching
+            up with friends, Together makes video communication simple, quick, and dependable, with no
+            account and no hidden charges.
           </p>
         </section>
 
@@ -250,9 +290,23 @@
       <header class="header">
         <div class="brand"><img src="/favicon.svg" alt="Together logo" class="brand__icon" /> Together</div>
         <div class="header__info">
-          <span id="participantCount" title="Participants"><i class="fas fa-user-group"></i> 1</span>
+          <button id="participantCount" class="participants-toggle" title="Show participants" type="button">
+            <i class="fas fa-user-group"></i> 1
+          </button>
         </div>
       </header>
+      <div id="participantsPanel" class="participants hidden">
+        <div class="participants__head">
+          <span>Participants</span>
+          <button id="participantsClose" class="chat__close" title="Close"><i class="fas fa-times"></i></button>
+        </div>
+        <ul id="participantsList" class="participants__list"></ul>
+      </div>
+      <div id="reconnectBanner" class="reconnect-banner hidden">
+        <i class="fas fa-triangle-exclamation"></i>
+        <span>Connection to the server was lost.</span>
+        <button id="reconnectBtn" type="button">Reload</button>
+      </div>
       <main class="main">
         <section class="stage">
           <div id="video-grid"></div>

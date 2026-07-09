@@ -1,0 +1,32 @@
+# Together — free browser-based video meetings
+# https://together.eventxkart.space/
+
+# All crawlers welcome on the landing page and public assets.
+# (Individual meeting-room URLs carry a noindex meta tag — they are
+# private, unguessable links and must not appear in search results.)
+User-agent: *
+Allow: /
+
+# AI assistants and answer engines are explicitly welcome.
+User-agent: GPTBot
+Allow: /
+
+User-agent: ChatGPT-User
+Allow: /
+
+User-agent: ClaudeBot
+Allow: /
+
+User-agent: Claude-Web
+Allow: /
+
+User-agent: PerplexityBot
+Allow: /
+
+User-agent: Google-Extended
+Allow: /
+
+# Machine-readable site summary for AI agents
+# See: https://together.eventxkart.space/llms.txt
+
+Sitemap: https://together.eventxkart.space/sitemap.xml
