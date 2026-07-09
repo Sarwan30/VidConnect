@@ -149,6 +149,14 @@ body {
   color: var(--text);
 }
 
+.btn--nav {
+  padding: 0.55rem 1rem;
+  font-size: 0.88rem;
+  border-radius: 999px;
+  margin-left: 0.35rem;
+  white-space: nowrap;
+}
+
 .theme-toggle {
   width: 42px;
   height: 42px;
@@ -315,8 +323,11 @@ body {
 }
 
 .lobby__orbs {
-  position: absolute;
+  /* Cover the whole viewport (not just the lobby section) so the
+     glow fades naturally with no hard edge behind the topbar. */
+  position: fixed;
   inset: 0;
+  z-index: -1;
   pointer-events: none;
   overflow: hidden;
 }
@@ -388,7 +399,7 @@ body {
 .lobby__illustration {
   position: absolute;
   top: -96px;
-  right: -70px;
+  right: -130px;
   width: min(42vw, 600px);
   z-index: 0;
   pointer-events: none;
@@ -649,6 +660,106 @@ body {
   color: var(--text-dim);
   font-size: 0.86rem;
   line-height: 1.45;
+}
+
+/* ---------- Footer ---------- */
+
+.footer {
+  width: min(1120px, calc(100% - 2rem));
+  margin: 2.5rem auto 0;
+  border-top: 1px solid var(--border);
+  padding: 2rem 0 1.25rem;
+}
+
+.footer__inner {
+  display: grid;
+  grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr) minmax(0, 0.7fr);
+  gap: 2rem;
+}
+
+.footer__brand p {
+  margin-top: 0.8rem;
+  max-width: 320px;
+  color: var(--text-dim);
+  font-size: 0.88rem;
+  line-height: 1.6;
+}
+
+.footer__socials {
+  display: flex;
+  gap: 0.6rem;
+  margin-top: 1rem;
+}
+
+.footer__socials a {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: 1px solid var(--border);
+  background-color: var(--surface);
+  color: var(--text);
+  font-size: 0.95rem;
+  text-decoration: none;
+  transition: transform 0.18s ease, border-color 0.18s ease, color 0.18s ease;
+}
+
+.footer__socials a:hover {
+  transform: translateY(-2px);
+  border-color: var(--primary);
+  color: var(--primary);
+}
+
+.footer__col h4 {
+  font-size: 0.92rem;
+  font-weight: 600;
+  margin-bottom: 0.85rem;
+}
+
+.footer__col a {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  color: var(--text-dim);
+  text-decoration: none;
+  font-size: 0.88rem;
+  padding: 0.3rem 0;
+  transition: color 0.18s ease;
+}
+
+.footer__col a:hover {
+  color: var(--primary);
+}
+
+.footer__col a i {
+  width: 18px;
+  text-align: center;
+  color: var(--primary);
+}
+
+.footer__bottom {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  margin-top: 1.75rem;
+  padding-top: 1.1rem;
+  border-top: 1px solid var(--border);
+  color: var(--text-dim);
+  font-size: 0.82rem;
+}
+
+.footer__bottom a {
+  color: var(--text);
+  font-weight: 500;
+  text-decoration: none;
+}
+
+.footer__bottom a:hover {
+  color: var(--primary);
 }
 
 /* ---------- Lobby panels (choice / join link / setup) ---------- */
@@ -1495,6 +1606,14 @@ body {
   .landing__details .detail-card:last-child {
     grid-column: 1 / -1;
   }
+
+  .footer__inner {
+    grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr);
+  }
+
+  .footer__col:last-child {
+    grid-column: 1 / -1;
+  }
 }
 
 @media (max-width: 900px) {
@@ -1528,15 +1647,31 @@ body {
 /* ---------- Phones ---------- */
 
 @media (max-width: 640px) {
-  /* Keep the glass topbar compact: brand + theme toggle only */
+  /* Keep the glass topbar compact: brand + CTA + theme toggle only */
   .topbar__nav a {
     display: none;
+  }
+
+  .btn--nav {
+    padding: 0.5rem 0.8rem;
+    font-size: 0.8rem;
   }
 
   .topbar {
     margin-top: 0.5rem;
     width: calc(100% - 1.25rem);
     padding: 0.4rem 0.55rem;
+  }
+
+  .footer__inner {
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+  }
+
+  .footer__bottom {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.4rem;
   }
 
   .theme-toggle {

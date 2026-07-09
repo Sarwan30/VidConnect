@@ -51,6 +51,31 @@ const peerServer = ExpressPeerServer(server, {
 });
 
 app.use("/peerjs", peerServer);
+
+// Serve a minified build of the client script: compact, and mangled
+// variable names make the shipped code much harder to read. Falls
+// back to the original file if minification fails.
+let minifiedScript = null;
+require("terser")
+  .minify(fs.readFileSync(path.join(__dirname, "public", "script.js"), "utf8"), {
+    compress: true,
+    mangle: true,
+  })
+  .then((result) => {
+    minifiedScript = result.code;
+  })
+  .catch((error) => {
+    console.error("Could not minify script.js, serving original:", error.message);
+  });
+
+app.get("/script.js", (req, res) => {
+  if (minifiedScript) {
+    res.type("application/javascript").send(minifiedScript);
+  } else {
+    res.sendFile(path.join(__dirname, "public", "script.js"));
+  }
+});
+
 app.use(express.static("public"));
 // Serve the PeerJS browser client from node_modules so the app
 // doesn't depend on an external CDN being reachable.

@@ -179,13 +179,20 @@ themeToggle?.addEventListener("click", () => {
   localStorage.setItem("vidconnect-theme", nextTheme);
 });
 
-heroCreateBtn?.addEventListener("click", () => {
+function createNewMeeting() {
   currentRoomId = crypto.randomUUID();
   isHost = true;
   sessionStorage.setItem("vc-host:" + currentRoomId, "1");
   history.pushState({ panel: "setup" }, "", "/" + currentRoomId);
   enterSetup("forward");
-});
+  document.getElementById("lobby").scrollIntoView({ behavior: "smooth", block: "start" });
+}
+
+heroCreateBtn?.addEventListener("click", createNewMeeting);
+document.getElementById("navStartBtn")?.addEventListener("click", createNewMeeting);
+
+const footerYear = document.getElementById("footerYear");
+if (footerYear) footerYear.textContent = new Date().getFullYear();
 
 heroJoinBtn?.addEventListener("click", () => {
   joinLinkError.classList.add("hidden");
@@ -489,6 +496,8 @@ function joinMeeting(asHost) {
   setStatus("");
 
   lobby.classList.add("hidden");
+  // Hide the whole landing shell (navbar + footer) during the meeting.
+  document.querySelector(".page-shell")?.classList.add("hidden");
   appEl.classList.remove("hidden");
   if (window.innerWidth <= 900) appEl.classList.remove("chat-open");
 

@@ -16,6 +16,7 @@
     "peer": "^1.0.2",
     "peerjs": "^1.5.5",
     "socket.io": "^4.8.1",
+    "terser": "^5.49.0",
     "uuid": "^8.3.2"
   },
   "devDependencies": {
