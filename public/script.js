@@ -5,7 +5,11 @@ const lobbyPreview = document.getElementById("lobbyPreview");
 const lobbyPreviewOff = document.getElementById("lobbyPreviewOff");
 const lobbyError = document.getElementById("lobbyError");
 const lobbyName = document.getElementById("lobbyName");
+const lobbyPreviewOffText = document.getElementById("lobbyPreviewOffText");
+const lobbyMicBtn = document.getElementById("lobbyMicBtn");
+const lobbyCamBtn = document.getElementById("lobbyCamBtn");
 const joinBtn = document.getElementById("joinBtn");
+const joinBtnText = document.getElementById("joinBtnText");
 const appEl = document.getElementById("app");
 const leftScreen = document.getElementById("leftScreen");
 const rejoinBtn = document.getElementById("rejoinBtn");
@@ -132,6 +136,8 @@ if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
     "Camera access is not available. Browsers only allow the camera on " +
     "http://localhost or over HTTPS. You opened: " + window.location.origin
   );
+  lobbyMicBtn.disabled = true;
+  lobbyCamBtn.disabled = true;
   mediaSettled = true;
   updateJoinState();
 } else {
@@ -155,6 +161,8 @@ if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
       console.error("Error accessing media devices:", error);
       lobbyPreviewOff.classList.remove("hidden");
       showLobbyError(explainMediaError(error));
+      lobbyMicBtn.disabled = true;
+      lobbyCamBtn.disabled = true;
       mediaSettled = true;
       updateJoinState();
     });
@@ -163,9 +171,41 @@ if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
 function updateJoinState() {
   if (myPeerId && mediaSettled) {
     joinBtn.disabled = false;
-    joinBtn.textContent = "Join meeting";
+    joinBtnText.textContent = "Join meeting";
   }
 }
+
+/* ---------- Pre-join mic/camera toggles ---------- */
+
+const setMicUI = (button, on) => {
+  button.classList.toggle(button.classList.contains("preview-btn") ? "preview-btn--off" : "control-btn--off", !on);
+  button.innerHTML = on
+    ? `<i class="fas fa-microphone"></i>`
+    : `<i class="fas fa-microphone-slash"></i>`;
+};
+
+const setCamUI = (button, on) => {
+  button.classList.toggle(button.classList.contains("preview-btn") ? "preview-btn--off" : "control-btn--off", !on);
+  button.innerHTML = on
+    ? `<i class="fas fa-video"></i>`
+    : `<i class="fas fa-video-slash"></i>`;
+};
+
+lobbyMicBtn.addEventListener("click", () => {
+  const track = myVideoStream && myVideoStream.getAudioTracks()[0];
+  if (!track) return;
+  track.enabled = !track.enabled;
+  setMicUI(lobbyMicBtn, track.enabled);
+});
+
+lobbyCamBtn.addEventListener("click", () => {
+  const track = myVideoStream && myVideoStream.getVideoTracks()[0];
+  if (!track) return;
+  track.enabled = !track.enabled;
+  setCamUI(lobbyCamBtn, track.enabled);
+  lobbyPreviewOff.classList.toggle("hidden", track.enabled);
+  if (!track.enabled) lobbyPreviewOffText.textContent = "Camera is off";
+});
 
 function joinMeeting() {
   if (joined || !myPeerId) return;
@@ -181,6 +221,11 @@ function joinMeeting() {
       muted: true,
       mirrored: true,
     });
+    // Carry the pre-join mic/camera choices into the in-call controls.
+    const audioTrack = myVideoStream.getAudioTracks()[0];
+    const videoTrack = myVideoStream.getVideoTracks()[0];
+    if (audioTrack) setMicUI(muteButton, audioTrack.enabled);
+    if (videoTrack) setCamUI(stopVideo, videoTrack.enabled);
   } else {
     muteButton.disabled = true;
     stopVideo.disabled = true;
@@ -230,8 +275,13 @@ function addVideoTile(userId, label, stream, { muted = false, mirrored = false }
 
 function removeVideoTile(userId) {
   const tile = videoGrid.querySelector(`[data-tile="${CSS.escape(userId)}"]`);
-  if (tile) tile.remove();
-  updateParticipantCount();
+  if (!tile) return;
+  // Fade the tile out before removing it from the grid.
+  tile.classList.add("video-tile--leaving");
+  setTimeout(() => {
+    tile.remove();
+    updateParticipantCount();
+  }, 220);
 }
 
 function updateParticipantCount() {
@@ -282,10 +332,7 @@ muteButton.addEventListener("click", () => {
   const audioTrack = myVideoStream.getAudioTracks()[0];
   if (!audioTrack) return;
   audioTrack.enabled = !audioTrack.enabled;
-  muteButton.classList.toggle("control-btn--off", !audioTrack.enabled);
-  muteButton.innerHTML = audioTrack.enabled
-    ? `<i class="fas fa-microphone"></i>`
-    : `<i class="fas fa-microphone-slash"></i>`;
+  setMicUI(muteButton, audioTrack.enabled);
 });
 
 stopVideo.addEventListener("click", () => {
@@ -293,10 +340,7 @@ stopVideo.addEventListener("click", () => {
   const videoTrack = myVideoStream.getVideoTracks()[0];
   if (!videoTrack) return;
   videoTrack.enabled = !videoTrack.enabled;
-  stopVideo.classList.toggle("control-btn--off", !videoTrack.enabled);
-  stopVideo.innerHTML = videoTrack.enabled
-    ? `<i class="fas fa-video"></i>`
-    : `<i class="fas fa-video-slash"></i>`;
+  setCamUI(stopVideo, videoTrack.enabled);
 });
 
 /* ---------- Screen share ---------- */
@@ -377,6 +421,46 @@ function leaveMeeting() {
 leaveBtn.addEventListener("click", leaveMeeting);
 rejoinBtn.addEventListener("click", () => window.location.reload());
 
+/* ---------- Chat sounds (generated, no audio files needed) ---------- */
+
+let audioCtx = null;
+function getAudioCtx() {
+  const AC = window.AudioContext || window.webkitAudioContext;
+  if (!AC) return null;
+  if (!audioCtx) audioCtx = new AC();
+  if (audioCtx.state === "suspended") audioCtx.resume();
+  return audioCtx;
+}
+
+function playNote(ctx, freq, start, duration, volume) {
+  const osc = ctx.createOscillator();
+  const gain = ctx.createGain();
+  osc.type = "sine";
+  osc.frequency.value = freq;
+  gain.gain.setValueAtTime(0, start);
+  gain.gain.linearRampToValueAtTime(volume, start + 0.012);
+  gain.gain.exponentialRampToValueAtTime(0.001, start + duration);
+  osc.connect(gain).connect(ctx.destination);
+  osc.start(start);
+  osc.stop(start + duration + 0.05);
+}
+
+// Soft single blip when you send a message.
+function playSendTone() {
+  const ctx = getAudioCtx();
+  if (!ctx) return;
+  playNote(ctx, 740, ctx.currentTime, 0.12, 0.05);
+}
+
+// Gentle two-note chime when a message arrives.
+function playReceiveTone() {
+  const ctx = getAudioCtx();
+  if (!ctx) return;
+  const t = ctx.currentTime;
+  playNote(ctx, 587, t, 0.12, 0.06);
+  playNote(ctx, 880, t + 0.09, 0.18, 0.06);
+}
+
 /* ---------- Chat ---------- */
 
 function sendMessage() {
@@ -384,6 +468,7 @@ function sendMessage() {
   if (value.length !== 0) {
     socket.emit("message", value);
     chatInput.value = "";
+    playSendTone();
   }
 }
 
@@ -395,14 +480,22 @@ chatInput.addEventListener("keydown", (e) => {
 // Build chat messages with DOM APIs (textContent) so user input
 // can never be injected as HTML.
 socket.on("createMessage", (message, userName) => {
+  const isOwn = userName === user;
+  if (!isOwn) {
+    playReceiveTone();
+    // Unread indicator when the chat panel is closed
+    if (!appEl.classList.contains("chat-open")) showChatBadge();
+  }
+
   const messageEl = document.createElement("div");
   messageEl.classList.add("message");
+  if (isOwn) messageEl.classList.add("message--own");
 
   const meta = document.createElement("div");
   meta.className = "message__meta";
   const author = document.createElement("span");
   author.className = "message__author";
-  author.textContent = userName === user ? "You" : userName;
+  author.textContent = isOwn ? "You" : userName;
   const time = document.createElement("span");
   time.className = "message__time";
   time.textContent = new Date().toLocaleTimeString([], {
@@ -428,7 +521,23 @@ function systemMessage(text) {
   chatWindow.scrollTop = chatWindow.scrollHeight;
 }
 
-chatToggle.addEventListener("click", () => appEl.classList.toggle("chat-open"));
+function showChatBadge() {
+  if (!chatToggle.querySelector(".chat-badge")) {
+    const badge = document.createElement("span");
+    badge.className = "chat-badge";
+    chatToggle.append(badge);
+  }
+}
+
+function clearChatBadge() {
+  const badge = chatToggle.querySelector(".chat-badge");
+  if (badge) badge.remove();
+}
+
+chatToggle.addEventListener("click", () => {
+  appEl.classList.toggle("chat-open");
+  if (appEl.classList.contains("chat-open")) clearChatBadge();
+});
 chatClose.addEventListener("click", () => appEl.classList.remove("chat-open"));
 
 /* ---------- Invite & toast ---------- */
@@ -445,7 +554,7 @@ inviteButton.addEventListener("click", async () => {
 let toastTimer = null;
 function showToast(text) {
   toastEl.textContent = text;
-  toastEl.classList.remove("hidden");
+  toastEl.classList.add("toast--visible");
   clearTimeout(toastTimer);
-  toastTimer = setTimeout(() => toastEl.classList.add("hidden"), 2600);
+  toastTimer = setTimeout(() => toastEl.classList.remove("toast--visible"), 2600);
 }

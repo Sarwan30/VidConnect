@@ -17,16 +17,27 @@
     <div id="lobby" class="lobby">
       <div class="lobby__card">
         <h1 class="brand"><i class="fas fa-video"></i> VidConnect</h1>
+        <p class="lobby__subtitle">Check your camera and microphone, then join the meeting</p>
         <div class="lobby__preview">
           <video id="lobbyPreview" autoplay muted playsinline class="mirrored"></video>
           <div id="lobbyPreviewOff" class="lobby__preview-off hidden">
             <i class="fas fa-video-slash"></i>
-            <span>Camera unavailable</span>
+            <span id="lobbyPreviewOffText">Camera unavailable</span>
+          </div>
+          <div class="lobby__preview-controls">
+            <button id="lobbyMicBtn" class="preview-btn" title="Toggle microphone">
+              <i class="fas fa-microphone"></i>
+            </button>
+            <button id="lobbyCamBtn" class="preview-btn" title="Toggle camera">
+              <i class="fas fa-video"></i>
+            </button>
           </div>
         </div>
         <p id="lobbyError" class="lobby__error hidden"></p>
         <input id="lobbyName" type="text" maxlength="30" placeholder="Enter your name" autocomplete="off" />
-        <button id="joinBtn" class="btn btn--primary" disabled>Connecting&hellip;</button>
+        <button id="joinBtn" class="btn btn--primary" disabled>
+          <span class="btn__spinner"></span><span id="joinBtnText">Connecting&hellip;</span>
+        </button>
       </div>
     </div>
 
@@ -88,7 +99,7 @@
       </div>
     </div>
 
-    <div id="toast" class="toast hidden"></div>
+    <div id="toast" class="toast"></div>
 
     <script src="script.js"></script>
   </body>
