@@ -54,3 +54,17 @@ continue. Delete the `certs/` folder to go back to plain HTTP.
 ## Configuration
 
 - `PORT` environment variable sets the server port (default `3030`).
+
+### TURN relay (required for calls across different networks)
+
+STUN alone only works when a direct peer-to-peer path exists. When users
+are on different networks (e.g. mobile data vs WiFi), video needs a TURN
+relay. Get free credentials from a TURN provider (e.g. metered.ca, free
+20 GB/month) and set these environment variables on your host:
+
+- `TURN_URLS` — comma-separated TURN URLs from your provider
+- `TURN_USERNAME` — TURN username
+- `TURN_CREDENTIAL` — TURN password/credential
+
+The server exposes them to the browser via `GET /ice-config`. Open that
+path on your deployed site to confirm the TURN entries are present.

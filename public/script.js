@@ -37,39 +37,49 @@ const names = {}; // userId -> display name
 
 // Connect to the PeerJS server hosted by this same app, so it works
 // from any device that can reach the server (not just localhost).
+// ICE servers (STUN + optional TURN relay) come from the server so
+// TURN credentials can be configured with env vars instead of code.
 let peer = null;
-try {
-  peer = new Peer(undefined, {
-    host: window.location.hostname,
-    port: window.location.port || (window.location.protocol === "https:" ? 443 : 80),
-    path: "/peerjs",
-    secure: window.location.protocol === "https:",
-    config: {
-      iceServers: [
-        { urls: "stun:stun.l.google.com:19302" },
-        { urls: "stun:global.stun.twilio.com:3478" },
-      ],
-    },
-  });
 
-  peer.on("error", (error) => {
-    console.error("PeerJS error:", error);
-  });
+const FALLBACK_ICE = [
+  { urls: "stun:stun.l.google.com:19302" },
+  { urls: "stun:global.stun.twilio.com:3478" },
+];
 
-  peer.on("open", (id) => {
-    myPeerId = id;
-    updateJoinState();
-  });
+fetch("/ice-config")
+  .then((res) => res.json())
+  .catch(() => ({ iceServers: FALLBACK_ICE }))
+  .then((config) => createPeer(config.iceServers || FALLBACK_ICE));
 
-  peer.on("call", (call) => {
-    const callerName = (call.metadata && call.metadata.userName) || "Guest";
-    names[call.peer] = callerName;
-    call.answer(outgoingStream());
-    registerCall(call.peer, call);
-  });
-} catch (error) {
-  console.error("Could not create PeerJS connection:", error);
-  showLobbyError("Could not connect to the video server. Please reload the page.");
+function createPeer(iceServers) {
+  try {
+    peer = new Peer(undefined, {
+      host: window.location.hostname,
+      port: window.location.port || (window.location.protocol === "https:" ? 443 : 80),
+      path: "/peerjs",
+      secure: window.location.protocol === "https:",
+      config: { iceServers },
+    });
+
+    peer.on("error", (error) => {
+      console.error("PeerJS error:", error);
+    });
+
+    peer.on("open", (id) => {
+      myPeerId = id;
+      updateJoinState();
+    });
+
+    peer.on("call", (call) => {
+      const callerName = (call.metadata && call.metadata.userName) || "Guest";
+      names[call.peer] = callerName;
+      call.answer(outgoingStream());
+      registerCall(call.peer, call);
+    });
+  } catch (error) {
+    console.error("Could not create PeerJS connection:", error);
+    showLobbyError("Could not connect to the video server. Please reload the page.");
+  }
 }
 
 /* ---------- Media helpers ---------- */

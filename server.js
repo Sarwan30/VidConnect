@@ -60,6 +60,28 @@ app.use(
   express.static(path.join(__dirname, "node_modules", "peerjs", "dist"))
 );
 
+// WebRTC ICE servers for the browser. STUN alone only works when a
+// direct peer-to-peer path exists; calls between different networks
+// (e.g. mobile data <-> WiFi) usually need a TURN relay. Configure one
+// via env vars: TURN_URLS (comma-separated), TURN_USERNAME, TURN_CREDENTIAL.
+app.get("/ice-config", (req, res) => {
+  const iceServers = [
+    { urls: "stun:stun.l.google.com:19302" },
+    { urls: "stun:global.stun.twilio.com:3478" },
+  ];
+  const { TURN_URLS, TURN_USERNAME, TURN_CREDENTIAL } = process.env;
+  if (TURN_URLS && TURN_USERNAME && TURN_CREDENTIAL) {
+    for (const url of TURN_URLS.split(",")) {
+      iceServers.push({
+        urls: url.trim(),
+        username: TURN_USERNAME,
+        credential: TURN_CREDENTIAL,
+      });
+    }
+  }
+  res.json({ iceServers });
+});
+
 app.get("/", (req, res) => {
   res.redirect(`/${uuidv4()}`);
 });
